@@ -52,6 +52,7 @@ export default function App() {
 
   // Tap navigation state
   const [currentTab, setCurrentTab] = useState<"beranda" | "alur-biaya" | "daftar" | "cek-status" | "admin">("beranda");
+  const [deviceMode, setDeviceMode] = useState<"desktop" | "tablet" | "mobile">("desktop");
   const [visiMisiTab, setVisiMisiTab] = useState<"visi" | "nilai">("visi");
 
   // Registration Form State
@@ -551,10 +552,59 @@ export default function App() {
   const fees = calculateFees();
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans flex flex-col selection:bg-blue-650 selection:text-white">
+    <div className="min-h-screen bg-slate-100 flex flex-col antialiased selection:bg-blue-650 selection:text-white">
       
-      {/* Decorative colored bar top headers */}
-      <div className="h-1.5 bg-gradient-to-r from-blue-700 via-indigo-600 to-amber-500 w-full" />
+      {/* Simulator Device Viewport Switcher */}
+      <div className="bg-slate-900 text-slate-100 px-4 py-2.5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs border-b border-slate-800 shrink-0 sticky top-0 z-[100] no-print">
+        <div className="flex items-center gap-2">
+          <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+          <span className="font-extrabold uppercase tracking-wider font-sans text-[11px] text-slate-200">
+            SIMULASI LAYAR RESPONSIF:
+          </span>
+          <span className="text-[10px] text-slate-400 font-sans font-medium">
+            (Tekan tombol untuk mensimulasikan kegunaan di layar HP, Tablet, atau Desktop secara langsung)
+          </span>
+        </div>
+        <div className="flex items-center gap-1 bg-slate-800 p-0.5 rounded-xl border border-slate-700 shrink-0">
+          <button
+            onClick={() => setDeviceMode("desktop")}
+            className={`px-3 py-1.5 rounded-lg font-bold font-sans transition-all flex items-center gap-1.5 cursor-pointer border-0 ${
+              deviceMode === "desktop" ? "bg-blue-600 text-white shadow-md inline-flex" : "text-slate-400 hover:text-white hover:bg-slate-700"
+            }`}
+          >
+            <i className="fa-solid fa-desktop text-xs"></i>
+            <span>Desktop</span>
+          </button>
+          <button
+            onClick={() => setDeviceMode("tablet")}
+            className={`px-3 py-1.5 rounded-lg font-bold font-sans transition-all flex items-center gap-1.5 cursor-pointer border-0 ${
+              deviceMode === "tablet" ? "bg-blue-600 text-white shadow-md inline-flex" : "text-slate-400 hover:text-white hover:bg-slate-700"
+            }`}
+          >
+            <i className="fa-solid fa-tablet-screen-button text-xs"></i>
+            <span>Tablet (iPad)</span>
+          </button>
+          <button
+            onClick={() => setDeviceMode("mobile")}
+            className={`px-3 py-1.5 rounded-lg font-bold font-sans transition-all flex items-center gap-1.5 cursor-pointer border-0 ${
+              deviceMode === "mobile" ? "bg-blue-600 text-white shadow-md inline-flex" : "text-slate-400 hover:text-white hover:bg-slate-700"
+            }`}
+          >
+            <i className="fa-solid fa-mobile-screen-button text-xs"></i>
+            <span>Smartphone (HP)</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Actual Application Outer Shell */}
+      <div className={`transition-all duration-300 flex-1 flex flex-col bg-white overflow-hidden relative ${
+        deviceMode === "mobile" ? "max-w-[420px] w-full mx-auto my-6 border-[12px] border-slate-800 rounded-[36px] shadow-2xl h-[844px] overflow-y-auto" :
+        deviceMode === "tablet" ? "max-w-[768px] w-full mx-auto my-6 border-[10px] border-slate-800 rounded-[24px] shadow-xl h-[1024px] overflow-y-auto" :
+        "w-full min-h-screen"
+      }`}>
+      
+        {/* Decorative colored bar top headers */}
+        <div className="h-1.5 bg-gradient-to-r from-blue-700 via-indigo-600 to-amber-500 w-full shrink-0" />
 
       {/* Persistent global toast notifications */}
       {alertMsg && (
@@ -746,36 +796,36 @@ export default function App() {
               
               {/* Left Column: Headline Utama (Main News Story) */}
               <div className="lg:col-span-2 space-y-4">
-                <div className="relative group rounded-3xl overflow-hidden bg-slate-950 aspect-video lg:min-h-[440px] shadow-lg border border-slate-200">
+                <div className="relative group rounded-3xl overflow-hidden bg-slate-950 min-h-[480px] sm:min-h-[430px] lg:min-h-[450px] shadow-lg border border-slate-200 flex flex-col justify-end">
                   {/* Backdrop Gradient & Premium Theme Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/50 to-transparent z-10" />
-                  <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(59,130,246,0.25),transparent_60%)]" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/60 to-transparent z-10" />
+                  <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(59,130,246,0.25),transparent_60%)] z-0" />
                   
                   {/* Dynamic Graphic Pattern representing State School prestige */}
-                  <div className="absolute inset-0 opacity-10 flex items-center justify-center">
+                  <div className="absolute inset-0 opacity-10 flex items-center justify-center z-0">
                     <div className="w-[120%] h-[120%] bg-[radial-gradient(circle,rgba(255,255,255,0.07)_1px,transparent_1px)] [background-size:24px_24px] rotate-12" />
                   </div>
 
                   {/* Absolute Badge Category */}
-                  <div className="absolute top-6 left-6 z-20 flex gap-2">
-                    <span className="bg-red-600 text-white font-extrabold text-[10px] tracking-widest uppercase px-3 py-1.5 rounded-full shadow-md">
+                  <div className="absolute top-4 left-4 sm:top-6 sm:left-6 z-20 flex flex-wrap gap-1.5">
+                    <span className="bg-red-600 text-white font-extrabold text-[9px] tracking-widest uppercase px-3 py-1.5 rounded-full shadow-md">
                       SOROTAN UTAMA
                     </span>
-                    <span className="bg-blue-600/90 text-white font-extrabold text-[10px] tracking-widest uppercase px-3 py-1.5 rounded-full shadow-md backdrop-blur">
+                    <span className="bg-blue-600/90 text-white font-extrabold text-[9px] tracking-widest uppercase px-3 py-1.5 rounded-full shadow-md backdrop-blur">
                       SPMB TA {settings.tahunPendaftaran}
                     </span>
                   </div>
 
-                  {/* Lower Text content */}
-                  <div className="absolute bottom-0 inset-x-0 p-6 sm:p-8 z-20 space-y-4">
-                    <div className="flex items-center gap-2 text-xs text-amber-400 font-bold">
+                  {/* Lower Text content - natural layout inside flex-end container prevents absolute overlap */}
+                  <div className="relative z-20 p-5 sm:p-8 space-y-4 pt-20 mt-auto bg-gradient-to-t from-slate-950 via-slate-950/90 to-transparent">
+                    <div className="flex items-center gap-2 text-[10px] sm:text-xs text-amber-400 font-bold">
                       <i className="fa-solid fa-clock"></i>
                       <span>Dipublikasikan: Baru Saja</span>
                       <span className="text-slate-500">•</span>
                       <span>Oleh: Panitia SPMB</span>
                     </div>
 
-                    <h3 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-white leading-tight font-display hover:text-blue-200 transition duration-300">
+                    <h3 className="text-xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-white leading-tight font-display hover:text-blue-200 transition duration-300">
                       Membangun Karakter, Meraih Keunggulan: Menjawab Kebutuhan Pendidikan Menengah Modern di Bandar Lampung
                     </h3>
 
@@ -2330,10 +2380,10 @@ export default function App() {
               </form>
             </div>
 
-              // Search outputs panel
-              searchTyped && (
-                foundApplicant ? (
-                  <div className="max-w-3xl mx-auto bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-lg animate-in zoom-in-95 duration-200">
+            {/* Search outputs panel */}
+            {searchTyped && (
+              foundApplicant ? (
+                <div className="max-w-3xl mx-auto bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-lg animate-in zoom-in-95 duration-200">
                     
                     {/* Applicant Profile Header */}
                     <div className="bg-gradient-to-r from-slate-100 to-slate-50 border-b border-slate-200 px-6 py-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -2587,7 +2637,7 @@ export default function App() {
                     </p>
                   </div>
                 )
-              )
+              )}
           </div>
         )}
 
@@ -4736,7 +4786,9 @@ ${editRejection ? `⚠️ Catatan Evaluasi Berkas:\n_"${editRejection}"_\n\n` : 
       )}
 
       {/* Persistent Gemini Conversational Tutor Assistant Widget bottom floating */}
-      <AIAssistant />
+      <AIAssistant isSimulated={deviceMode !== "desktop"} />
+
+      </div>
 
     </div>
   );

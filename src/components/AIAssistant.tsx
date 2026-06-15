@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { MessageSquare, Send, Bot, X, Sparkles, AlertCircle } from "lucide-react";
 import { ChatMessage } from "../types";
 
-export default function AIAssistant() {
+export default function AIAssistant({ isSimulated = false }: { isSimulated?: boolean }) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -100,21 +100,27 @@ export default function AIAssistant() {
       <button
         id="btn-trigger-ai"
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-gradient-to-r from-blue-700 to-indigo-800 text-white px-5 py-3.5 rounded-full shadow-2xl hover:scale-105 transition-all duration-300 pointer"
+        className={`${
+          isSimulated ? "absolute bottom-4 right-4" : "fixed bottom-6 right-6"
+        } z-50 flex items-center gap-2 bg-gradient-to-r from-blue-700 to-indigo-800 text-white px-5 py-3.5 rounded-full shadow-2xl hover:scale-105 transition-all duration-300 pointer border-0`}
       >
         <span className="relative flex h-3 w-3">
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
           <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span>
         </span>
         <Sparkles className="w-5 h-5 text-amber-300" />
-        <span className="font-medium tracking-wide font-sans">Tanya Asisten SPMB (AI)</span>
+        <span className="font-medium tracking-wide font-sans text-xs sm:text-sm">Tanya Asisten SPMB (AI)</span>
       </button>
 
       {/* Chat Window Panel Container */}
       {isOpen && (
         <div
           id="chat-ai-panel"
-          className="fixed bottom-6 right-6 z-50 w-full max-w-md h-[550px] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-slate-200 animate-in fade-in slide-in-from-bottom-12 duration-300"
+          className={`${
+            isSimulated 
+              ? "absolute bottom-4 right-4 max-w-[calc(100%-2rem)] w-[360px]" 
+              : "fixed bottom-6 right-6 w-full max-w-md"
+          } z-50 h-[500px] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-slate-200 animate-in fade-in slide-in-from-bottom-12 duration-300`}
         >
           {/* Header */}
           <div className="bg-gradient-to-r from-blue-800 to-indigo-900 px-5 py-4 flex items-center justify-between text-white shadow-md">
