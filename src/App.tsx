@@ -483,12 +483,11 @@ export default function App() {
     showAlert("info", `Pendaftaran penerimaan murid baru sekarang diubah.`);
   };
 
-  const handleUpdateQuotas = (major: "MIPA" | "IPS" | "Bahasa", num: number) => {
+  const handleUpdateQuotas = (major: "MIPA" | "IPS", num: number) => {
     setSettings((prev) => {
       const copy = { ...prev };
       if (major === "MIPA") copy.kuotaMIPA = num;
       if (major === "IPS") copy.kuotaIPS = num;
-      if (major === "Bahasa") copy.kuotaBahasa = num;
       return copy;
     });
   };
@@ -513,7 +512,6 @@ export default function App() {
   // Calculate live registration counts
   const totalMIPARegistered = applicants.filter((a) => a.preferredMajor === Major.MIPA).length;
   const totalIPSRegistered = applicants.filter((a) => a.preferredMajor === Major.IPS).length;
-  const totalBahasaRegistered = applicants.filter((a) => a.preferredMajor === Major.BAHASA).length;
 
   const totalDiterima = applicants.filter((a) => a.status === AdmissionStatus.DITERIMA).length;
   const totalDitolak = applicants.filter((a) => a.status === AdmissionStatus.DITOLAK).length;
@@ -846,13 +844,15 @@ export default function App() {
                         <i className="fa-solid fa-file-signature"></i>
                         Isi Formulir Mandiri
                       </button>
-                      <button
-                        onClick={() => setCurrentTab("alur-biaya")}
-                        className="bg-white/10 hover:bg-white/20 text-white font-bold px-6 py-2.5 rounded-xl text-xs transition border border-white/20 backdrop-blur pointer flex items-center gap-2"
+                      <a
+                        href="https://wa.me/6289503312895?text=Halo%20Panitia%20SPMB%20SMA%20Bintang%20Plus%20Bandar%20Lampung%2C%20saya%20ingin%20berkonsultasi%20mengenai%20penerimaan%20siswa%20baru."
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-2.5 rounded-xl text-xs transition pointer flex items-center gap-2 no-underline shadow-md"
                       >
-                        <i className="fa-solid fa-circle-info"></i>
-                        Rencana Biaya Resmi
-                      </button>
+                        <i className="fa-brands fa-whatsapp text-sm"></i>
+                        Konsultasi Pendaftaran (WA)
+                      </a>
                     </div>
                   </div>
                 </div>
@@ -1491,7 +1491,7 @@ export default function App() {
                       alt="Logo SMA Bintang Plus" 
                       className="h-12 w-12 object-contain mx-auto filter drop-shadow animate-bounce" 
                     />
-                    <p className="font-bold text-xs tracking-tight">KAMPUS BERPRESTASI - KEMILING</p>
+                    <p className="font-bold text-xs tracking-tight">SEKOLAH UNGGULAN & BERKARAKTER</p>
                     <p className="text-[10px] text-indigo-200 font-mono">SMA Bintang Plus Bandar Lampung Hub</p>
                   </div>
                 </div>
@@ -1510,7 +1510,7 @@ export default function App() {
                 <p className="text-slate-500 text-xs font-sans mt-1">Kuota tampung resmi yang diperebutkan melalui jalur Merit-System ujian CBT.</p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {[
                   {
                     title: "MIPA",
@@ -1529,15 +1529,6 @@ export default function App() {
                     registered: totalIPSRegistered,
                     color: "border-amber-200 bg-amber-50/20",
                     badge: "bg-amber-100 text-amber-800",
-                  },
-                  {
-                    title: "BAHASA",
-                    fullName: "Kesusastraan & Jurnalistik Komunikasi",
-                    desc: "Fokus menumbuhkan kompetensi multi-bahasa asing, antropologi kultural budaya luar, kehumasan, public speaking, serta kajian literatur.",
-                    quota: settings.kuotaBahasa,
-                    registered: totalBahasaRegistered,
-                    color: "border-purple-200 bg-purple-50/20",
-                    badge: "bg-purple-100 text-purple-800",
                   },
                 ].map((peminatan, idx) => {
                   const sisa = peminatan.quota - peminatan.registered;
@@ -1850,8 +1841,8 @@ export default function App() {
 
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-slate-650 block font-sans">Pilihan Program Jurusan <span className="text-red-500">*</span></label>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      {[Major.MIPA, Major.IPS, Major.BAHASA].map((maj) => {
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {[Major.MIPA, Major.IPS].map((maj) => {
                         const isSelected = formInput.preferredMajor === maj;
                         return (
                           <button
@@ -2802,11 +2793,10 @@ export default function App() {
                         </div>
 
                         {/* Card list with premium radiant colors so and viewer does not confuse */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                           {[
                             { label: "Peminat Jurusan MIPA", val: `${totalMIPARegistered} / ${settings.kuotaMIPA}`, prc: Math.round((totalMIPARegistered / (settings.kuotaMIPA || 1)) * 100), desc: "Matematika & IPA", bg: "from-blue-600 via-blue-700 to-indigo-800 text-indigo-100", pbColor: "bg-yellow-300" },
                             { label: "Peminat Jurusan IPS", val: `${totalIPSRegistered} / ${settings.kuotaIPS}`, prc: Math.round((totalIPSRegistered / (settings.kuotaIPS || 1)) * 100), desc: "Ilmu Sosial", bg: "from-purple-600 via-purple-700 to-rose-700 text-purple-100", pbColor: "bg-cyan-300" },
-                            { label: "Peminat Jurusan Bahasa", val: `${totalBahasaRegistered} / ${settings.kuotaBahasa}`, prc: Math.round((totalBahasaRegistered / (settings.kuotaBahasa || 1)) * 100), desc: "Budaya & Bahasa", bg: "from-amber-500 via-orange-550 to-red-650 text-amber-100", pbColor: "bg-emerald-300" },
                             { label: "Siswa Lulus Seleksi", val: `${totalDiterima} Siswa`, prc: applicants.length > 0 ? Math.round((totalDiterima / applicants.length) * 100) : 0, desc: "Status Diterima", bg: "from-emerald-600 via-teal-650 to-cyan-700 text-emerald-100", pbColor: "bg-yellow-300" }
                           ].map((c, idx) => (
                             <button
@@ -3267,8 +3257,7 @@ ${editRejection ? `⚠️ Catatan Evaluasi Berkas:\n_"${editRejection}"_\n\n` : 
                                 <div className="space-y-1.5 text-slate-650">
                                   {[
                                     { label: "Kuota Matematika & IPA (MIPA)", key: "kuotaMIPA" },
-                                    { label: "Kuota Ilmu Pengetahuan Sosial (IPS)", key: "kuotaIPS" },
-                                    { label: "Kuota Bahasa & Budaya (BAHASA)", key: "kuotaBahasa" }
+                                    { label: "Kuota Ilmu Pengetahuan Sosial (IPS)", key: "kuotaIPS" }
                                   ].map((m) => (
                                     <div key={m.key} className="flex justify-between items-center p-1">
                                       <span>{m.label} :</span>

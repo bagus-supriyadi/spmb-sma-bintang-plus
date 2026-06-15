@@ -6,7 +6,6 @@ export const INITIAL_SETTINGS: SPMBSettings = {
   tahunPendaftaran: "2026",
   kuotaMIPA: 120,
   kuotaIPS: 90,
-  kuotaBahasa: 30,
   tglPendaftaran: "10 Juni s.d 30 Juni 2026",
   tglVerifikasi: "11 Juni s.d 02 Juli 2026",
   tglPengumuman: "05 Juli 2026",
@@ -115,7 +114,7 @@ export const INITIAL_APPLICANTS: Applicant[] = [
     email: "amanda.putri@hotmail.com",
     address: "Perum Permata Biru Blok C No. 5, Sukarame, Bandar Lampung",
     previousSchool: "SMP Negeri 2 Bandar Lampung",
-    preferredMajor: Major.BAHASA,
+    preferredMajor: Major.IPS,
     status: AdmissionStatus.PROSES,
   },
   {

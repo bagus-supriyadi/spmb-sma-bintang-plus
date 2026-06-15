@@ -1,7 +1,6 @@
 export enum Major {
   MIPA = "MIPA (Matematika & IPA)",
   IPS = "IPS (Ilmu Pengetahuan Sosial)",
-  BAHASA = "Bahasa & Budaya",
 }
 
 export enum AdmissionStatus {
@@ -52,7 +51,6 @@ export interface SPMBSettings {
   tahunPendaftaran: string;
   kuotaMIPA: number;
   kuotaIPS: number;
-  kuotaBahasa: number;
   tglPendaftaran?: string;
   tglVerifikasi?: string;
   tglPengumuman?: string;

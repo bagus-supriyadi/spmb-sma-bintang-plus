@@ -7,7 +7,7 @@ export default function AIAssistant({ isSimulated = false }: { isSimulated?: boo
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       role: "model",
-      text: "Halo! Saya adalah **Asisten SPMB Bintang Plus**. 🌟 Ada yang bisa saya bantu mengenai informasi pendaftaran, berkas syarat masuk, program jurusan (MIPA, IPS, Bahasa), biaya, atau beasiswa di SMA Bintang Plus Bandar Lampung?",
+      text: "Halo! Saya adalah **Asisten SPMB Bintang Plus**. 🌟 Ada yang bisa saya bantu mengenai informasi pendaftaran, berkas syarat masuk, program jurusan (MIPA, IPS), biaya, atau beasiswa di SMA Bintang Plus Bandar Lampung?",
     },
   ]);
   const [inputValue, setInputValue] = useState("");
