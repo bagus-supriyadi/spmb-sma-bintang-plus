@@ -1,0 +1,6 @@
+{
+  "name": "SPMB SMA Bintang Plus",
+  "description": "Sistem Seleksi Penerimaan Murid Baru Online SMA Bintang Plus Bandar Lampung dengan Asisten AI Gemini.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
