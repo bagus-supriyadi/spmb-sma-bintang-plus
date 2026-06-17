@@ -604,8 +604,8 @@ export default function App() {
       }`}>
 
         <div className={`transition-all duration-300 flex-1 flex flex-col bg-white overflow-hidden relative shadow-md ${
-          deviceMode === "mobile" ? "lg:w-[412px] lg:h-[844px] lg:border-[12px] lg:border-slate-800 lg:rounded-[36px] lg:shadow-2xl lg:overflow-y-auto lg:flex-none" :
-          deviceMode === "tablet" ? "lg:w-[768px] lg:h-[1024px] lg:border-[10px] lg:border-slate-800 lg:rounded-[24px] lg:shadow-xl lg:overflow-y-auto lg:flex-none" :
+          deviceMode === "mobile" ? "lg:w-[412px] lg:h-[844px] lg:border-[12px] lg:border-slate-800 lg:rounded-[36px] lg:shadow-2xl lg:overflow-hidden lg:flex-none" :
+          deviceMode === "tablet" ? "lg:w-[768px] lg:h-[1024px] lg:border-[10px] lg:border-slate-800 lg:rounded-[24px] lg:shadow-xl lg:overflow-hidden lg:flex-none" :
           "w-full min-h-screen"
         }`}>
       
@@ -627,6 +627,9 @@ export default function App() {
               </div>
             </div>
           )}
+
+          {/* Scrollable area for simulated devices (makes floating assistant widget scroll-independent) */}
+          <div className={`flex-1 flex flex-col ${deviceMode !== "desktop" ? "lg:overflow-y-auto lg:h-full lg:w-full" : ""}`}>
 
           {/* Header & Logo Section */}
           <header className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm backdrop-blur-md bg-white/95 shrink-0">
@@ -3946,9 +3949,9 @@ ${editRejection ? `⚠️ Catatan Evaluasi Berkas:\n_"${editRejection}"_\n\n` : 
       <footer className="bg-slate-950 text-slate-400 pt-16 pb-12 mt-16 border-t border-slate-900 no-print">
         <div className="max-w-7xl mx-auto px-6 sm:px-8">
           
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-10 pb-12 border-b border-slate-900">
+          <div className={`grid grid-cols-1 ${isResponsiveSimulated ? "" : "md:grid-cols-4"} gap-10 pb-12 border-b border-slate-900`}>
             {/* Column 1: School Identity */}
-            <div className="md:col-span-1.5 space-y-4 text-left">
+            <div className={`space-y-4 text-left`}>
               <div className="flex items-center gap-2.5">
                 <img 
                   src="https://bagus-supriyadi.biz.id/uploads/logo%20sma%20bintang%20plus%20bandar%20lampung.png" 
@@ -4064,7 +4067,7 @@ ${editRejection ? `⚠️ Catatan Evaluasi Berkas:\n_"${editRejection}"_\n\n` : 
             </div>
           </div>
 
-          <div className="pt-8 flex flex-col sm:flex-row justify-between items-center gap-4 text-[11px] text-slate-600 font-mono">
+          <div className={`pt-8 flex ${isResponsiveSimulated ? "flex-col items-center text-center" : "flex-col sm:flex-row"} justify-between items-center gap-4 text-[11px] text-slate-600 font-mono`}>
             <span>&copy; {new Date().getFullYear()} Yayasan Kata Kita Edukasi &bull; SMA Bintang Plus Bandar Lampung.</span>
             <span>Sistem Informasi SPMB Online v2.4.5 &bull; Terakreditasi Mandiri</span>
           </div>
@@ -4784,8 +4787,10 @@ ${editRejection ? `⚠️ Catatan Evaluasi Berkas:\n_"${editRejection}"_\n\n` : 
         </div>
       )}
 
-      {/* Persistent Gemini Conversational Tutor Assistant Widget bottom floating */}
-      <AIAssistant isSimulated={deviceMode !== "desktop"} />
+          </div>
+
+          {/* Persistent Gemini Conversational Tutor Assistant Widget bottom floating */}
+          <AIAssistant isSimulated={deviceMode !== "desktop"} />
 
         </div>
 
