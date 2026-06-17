@@ -55,6 +55,10 @@ export default function App() {
   const [deviceMode, setDeviceMode] = useState<"desktop" | "tablet" | "mobile">("desktop");
   const [visiMisiTab, setVisiMisiTab] = useState<"visi" | "nilai">("visi");
 
+  const isMobileView = deviceMode === "mobile";
+  const isTabletView = deviceMode === "tablet";
+  const isResponsiveSimulated = isMobileView || isTabletView;
+
   // Registration Form State
   const [formInput, setFormInput] = useState({
     fullName: "",
@@ -594,155 +598,161 @@ export default function App() {
         </div>
       </div>
 
-      {/* Actual Application Outer Shell - only apply mock frame styling on large screen sizes when simulated */}
-      <div className={`transition-all duration-300 flex-1 flex flex-col bg-white overflow-hidden relative ${
-        deviceMode === "mobile" ? "lg:max-w-[420px] lg:w-full lg:mx-auto lg:my-6 lg:border-[12px] lg:border-slate-800 lg:rounded-[36px] lg:shadow-2xl lg:h-[844px] lg:overflow-y-auto w-full min-h-screen" :
-        deviceMode === "tablet" ? "lg:max-w-[768px] lg:w-full lg:mx-auto lg:my-6 lg:border-[10px] lg:border-slate-800 lg:rounded-[24px] lg:shadow-xl lg:h-[1024px] lg:overflow-y-auto w-full min-h-screen" :
-        "w-full min-h-screen"
+      {/* Actual Application Outer Shell - if simulated mobile/tablet on desktop, center it with a deep slate device preview wrapper */}
+      <div className={`flex-1 flex flex-col w-full ${
+        deviceMode !== "desktop" ? "lg:bg-slate-950 lg:py-8 lg:px-4 lg:items-center lg:justify-center lg:overflow-y-auto lg:min-h-screen" : "bg-white"
       }`}>
+
+        <div className={`transition-all duration-300 flex-1 flex flex-col bg-white overflow-hidden relative shadow-md ${
+          deviceMode === "mobile" ? "lg:w-[412px] lg:h-[844px] lg:border-[12px] lg:border-slate-800 lg:rounded-[36px] lg:shadow-2xl lg:overflow-y-auto lg:flex-none" :
+          deviceMode === "tablet" ? "lg:w-[768px] lg:h-[1024px] lg:border-[10px] lg:border-slate-800 lg:rounded-[24px] lg:shadow-xl lg:overflow-y-auto lg:flex-none" :
+          "w-full min-h-screen"
+        }`}>
       
-        {/* Decorative colored bar top headers */}
-        <div className="h-1.5 bg-gradient-to-r from-blue-700 via-indigo-600 to-amber-500 w-full shrink-0" />
+          {/* Decorative colored bar top headers */}
+          <div className="h-1.5 bg-gradient-to-r from-blue-700 via-indigo-600 to-amber-500 w-full shrink-0" />
 
-      {/* Persistent global toast notifications */}
-      {alertMsg && (
-        <div className="fixed top-20 right-6 z-50 flex items-center gap-3 bg-white border border-slate-200 px-5 py-4 rounded-xl shadow-2xl animate-in slide-in-from-top-6 duration-300">
-          <div className={`p-1.5 rounded-lg ${
-            alertMsg.type === "success" ? "bg-emerald-100 text-emerald-700" :
-            alertMsg.type === "error" ? "bg-red-100 text-red-700" : "bg-blue-100 text-blue-700"
-          }`}>
-            <Check className="w-5 h-5" />
-          </div>
-          <div>
-            <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider font-sans">Pemberitahuan Sistem</p>
-            <p className="text-sm font-medium text-slate-700 font-sans">{alertMsg.text}</p>
-          </div>
-        </div>
-      )}
-
-      {/* Header & Logo Section */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm backdrop-blur-md bg-white/95">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <img 
-              src="https://bagus-supriyadi.biz.id/uploads/logo%20sma%20bintang%20plus%20bandar%20lampung.png" 
-              alt="Logo SMA Bintang Plus Bandar Lampung" 
-              className="h-12 w-12 object-contain filter drop-shadow" 
-              onError={(e) => {
-                // Return a safe fallback icon in case external URL fails
-                e.currentTarget.onerror = null;
-                e.currentTarget.style.display = "none";
-              }}
-            />
-            <div>
-              <span className="text-xs uppercase font-extrabold tracking-widest text-blue-700 block font-display">Sistem Mandiri SPMB</span>
-              <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-slate-800 to-slate-900 bg-clip-text text-transparent font-display tracking-tight flex items-center gap-1.5">
-                SMA Bintang Plus
-              </h1>
+          {/* Persistent global toast notifications */}
+          {alertMsg && (
+            <div className="fixed top-20 right-6 z-50 flex items-center gap-3 bg-white border border-slate-200 px-5 py-4 rounded-xl shadow-2xl animate-in slide-in-from-top-6 duration-300">
+              <div className={`p-1.5 rounded-lg ${
+                alertMsg.type === "success" ? "bg-emerald-100 text-emerald-700" :
+                alertMsg.type === "error" ? "bg-red-100 text-red-700" : "bg-blue-100 text-blue-700"
+              }`}>
+                <Check className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider font-sans">Pemberitahuan Sistem</p>
+                <p className="text-sm font-medium text-slate-700 font-sans">{alertMsg.text}</p>
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Nav Links */}
-          <nav className="hidden md:flex items-center gap-1">
+          {/* Header & Logo Section */}
+          <header className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm backdrop-blur-md bg-white/95 shrink-0">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between gap-2.5">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <img 
+                  src="https://bagus-supriyadi.biz.id/uploads/logo%20sma%20bintang%20plus%20bandar%20lampung.png" 
+                  alt="Logo SMA Bintang Plus Bandar Lampung" 
+                  className={`${isMobileView ? "h-9 w-9" : "h-10 w-10 sm:h-12 sm:w-12"} object-contain filter drop-shadow shrink-0`}
+                  onError={(e) => {
+                    // Return a safe fallback icon in case external URL fails
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.style.display = "none";
+                  }}
+                />
+                <div className="min-w-0">
+                  <span className={`text-[9px] uppercase font-extrabold tracking-widest text-blue-700 block font-display leading-none mb-1 ${isMobileView ? "hidden" : "block"}`}>Sistem Mandiri SPMB</span>
+                  <h1 className={`font-bold bg-gradient-to-r from-slate-800 to-slate-900 bg-clip-text text-transparent font-display tracking-tight flex items-center gap-1.5 truncate ${isMobileView ? "text-sm" : "text-base sm:text-xl"}`}>
+                    SMA Bintang Plus
+                  </h1>
+                </div>
+              </div>
+
+              {/* Nav Links */}
+              <nav className={`hidden ${isResponsiveSimulated ? "" : "md:flex"} items-center gap-1`}>
+                <button
+                  onClick={() => { setCurrentTab("beranda"); }}
+                  className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all ${
+                    currentTab === "beranda" ? "bg-slate-100 text-slate-900" : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
+                  }`}
+                >
+                  Profil Sekolah
+                </button>
+                <button
+                  onClick={() => { setCurrentTab("alur-biaya"); }}
+                  className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all ${
+                    currentTab === "alur-biaya" ? "bg-slate-100 text-slate-900" : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
+                  }`}
+                >
+                  Dokumen & Alur
+                </button>
+                <button
+                  onClick={() => { setCurrentTab("daftar"); }}
+                  className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all ${
+                    currentTab === "daftar" ? "bg-slate-100 text-slate-900" : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
+                  }`}
+                >
+                  Daftar Sekarang
+                </button>
+                <button
+                  onClick={() => { setCurrentTab("cek-status"); }}
+                  className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all ${
+                    currentTab === "cek-status" ? "bg-slate-100 text-slate-900" : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
+                  }`}
+                >
+                  Hasil Pengumuman Kelulusan
+                </button>
+                <div className="h-5 w-px bg-slate-200 mx-2" />
+                <button
+                  onClick={() => { setCurrentTab("admin"); }}
+                  className={`px-3.5 py-2 text-sm font-semibold rounded-lg transition-all flex items-center gap-1.5 ${
+                    currentTab === "admin" ? "bg-blue-50 text-blue-700" : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
+                  }`}
+                >
+                  <i className="fa-solid fa-user-shield text-xs mr-0.5"></i>
+                  Panitia Login
+                </button>
+              </nav>
+
+              {/* Quick Info Status Indicator badge */}
+              <div className="flex items-center gap-1.5 shrink-0 select-none">
+                <span className={`px-2 py-1 rounded-full font-bold flex items-center gap-1.5 text-slate-805 ${
+                  isMobileView ? "text-[10px] px-2 py-1" : "text-xs px-2.5 py-1"
+                } ${
+                  settings.statusPendaftaran === "Buka" ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"
+                }`}>
+                  <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${
+                    settings.statusPendaftaran === "Buka" ? "bg-emerald-500 animate-pulse" : "bg-rose-550"
+                  }`}></span>
+                  <span className="truncate">{isMobileView ? "DIBUKA" : `SPMB ${settings.statusPendaftaran === "Buka" ? "DIBUKA" : "DITUTUP"}`}</span>
+                </span>
+              </div>
+            </div>
+          </header>
+
+          {/* Small Screen Nav menu bar */}
+          <div className={`bg-slate-100 border-b border-slate-200 py-2.5 px-4 flex ${isResponsiveSimulated ? "flex" : "md:hidden"} gap-1 overflow-x-auto justify-start select-none shrink-0`}>
             <button
-              onClick={() => { setCurrentTab("beranda"); }}
-              className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all ${
-                currentTab === "beranda" ? "bg-slate-100 text-slate-900" : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
+              onClick={() => setCurrentTab("beranda")}
+              className={`px-3 py-1.5 text-xs font-bold rounded-lg shrink-0 ${
+                currentTab === "beranda" ? "bg-blue-750 text-white" : "text-slate-600 bg-white"
               }`}
             >
-              Profil Sekolah
+              Profil
             </button>
             <button
-              onClick={() => { setCurrentTab("alur-biaya"); }}
-              className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all ${
-                currentTab === "alur-biaya" ? "bg-slate-100 text-slate-900" : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
+              onClick={() => setCurrentTab("alur-biaya")}
+              className={`px-3 py-1.5 text-xs font-bold rounded-lg shrink-0 ${
+                currentTab === "alur-biaya" ? "bg-blue-750 text-white" : "text-slate-600 bg-white"
               }`}
             >
               Dokumen & Alur
             </button>
             <button
-              onClick={() => { setCurrentTab("daftar"); }}
-              className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all ${
-                currentTab === "daftar" ? "bg-slate-100 text-slate-900" : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
+              onClick={() => setCurrentTab("daftar")}
+              className={`px-3 py-1.5 text-xs font-bold rounded-lg shrink-0 ${
+                currentTab === "daftar" ? "bg-blue-750 text-white" : "text-slate-600 bg-white"
               }`}
             >
-              Daftar Sekarang
+              Formulir
             </button>
             <button
-              onClick={() => { setCurrentTab("cek-status"); }}
-              className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all ${
-                currentTab === "cek-status" ? "bg-slate-100 text-slate-900" : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
+              onClick={() => setCurrentTab("cek-status")}
+              className={`px-3 py-1.5 text-xs font-bold rounded-lg shrink-0 ${
+                currentTab === "cek-status" ? "bg-blue-750 text-white" : "text-slate-600 bg-white"
               }`}
             >
               Hasil Pengumuman Kelulusan
             </button>
-            <div className="h-5 w-px bg-slate-200 mx-2" />
             <button
-              onClick={() => { setCurrentTab("admin"); }}
-              className={`px-3.5 py-2 text-sm font-semibold rounded-lg transition-all flex items-center gap-1.5 ${
-                currentTab === "admin" ? "bg-blue-50 text-blue-700" : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
+              onClick={() => setCurrentTab("admin")}
+              className={`px-3 py-1.5 text-xs font-bold rounded-lg shrink-0 ${
+                currentTab === "admin" ? "bg-blue-100 text-blue-700" : "text-slate-600 bg-white"
               }`}
             >
-              <i className="fa-solid fa-user-shield text-xs mr-0.5"></i>
-              Panitia Login
-            </button>
-          </nav>
-
-          {/* Quick Info Status Indicator badge */}
-          <div className="flex items-center gap-2">
-            <span className={`text-xs px-2.5 py-1 rounded-full font-bold flex items-center gap-1.5 ${
-              settings.statusPendaftaran === "Buka" ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"
-            }`}>
-              <span className={`h-1.5 w-1.5 rounded-full ${
-                settings.statusPendaftaran === "Buka" ? "bg-emerald-500 animate-pulse" : "bg-rose-550"
-              }`}></span>
-              SPMB {settings.statusPendaftaran === "Buka" ? "DIBUKA" : "DITUTUP"}
-            </span>
-          </div>
-        </div>
-      </header>
-
-      {/* Small Screen Nav menu bar */}
-      <div className="bg-slate-100 border-b border-slate-200 py-2.5 px-4 flex md:hidden gap-1 overflow-x-auto justify-start select-none">
-        <button
-          onClick={() => setCurrentTab("beranda")}
-          className={`px-3 py-1.5 text-xs font-bold rounded-lg shrink-0 ${
-            currentTab === "beranda" ? "bg-blue-750 text-white" : "text-slate-600 bg-white"
-          }`}
-        >
-          Profil
-        </button>
-        <button
-          onClick={() => setCurrentTab("alur-biaya")}
-          className={`px-3 py-1.5 text-xs font-bold rounded-lg shrink-0 ${
-            currentTab === "alur-biaya" ? "bg-blue-750 text-white" : "text-slate-600 bg-white"
-          }`}
-        >
-          Dokumen & Alur
-        </button>
-        <button
-          onClick={() => setCurrentTab("daftar")}
-          className={`px-3 py-1.5 text-xs font-bold rounded-lg shrink-0 ${
-            currentTab === "daftar" ? "bg-blue-750 text-white" : "text-slate-600 bg-white"
-          }`}
-        >
-          Formulir
-        </button>
-        <button
-          onClick={() => setCurrentTab("cek-status")}
-          className={`px-3 py-1.5 text-xs font-bold rounded-lg shrink-0 ${
-            currentTab === "cek-status" ? "bg-blue-750 text-white" : "text-slate-600 bg-white"
-          }`}
-        >
-          Hasil Pengumuman Kelulusan
-        </button>
-        <button
-          onClick={() => setCurrentTab("admin")}
-          className={`px-3 py-1.5 text-xs font-bold rounded-lg shrink-0 ${
-            currentTab === "admin" ? "bg-blue-100 text-blue-700" : "text-slate-600 bg-white"
-          }`}
-        >
-          Panitia Admin
+              Panitia Admin
         </button>
       </div>
 
@@ -790,10 +800,10 @@ export default function App() {
             </div>
 
             {/* Detik-style News Grid (Hero Headline + Popular Secondary Articles) */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className={`grid grid-cols-1 ${isResponsiveSimulated ? "" : "lg:grid-cols-3"} gap-8`}>
               
               {/* Left Column: Headline Utama (Main News Story) */}
-              <div className="lg:col-span-2 space-y-4">
+              <div className={`${isResponsiveSimulated ? "" : "lg:col-span-2"} space-y-4`}>
                 <div className="relative group rounded-3xl overflow-hidden bg-slate-950 min-h-[480px] sm:min-h-[430px] lg:min-h-[450px] shadow-lg border border-slate-200 flex flex-col justify-end">
                   {/* Backdrop Gradient & Premium Theme Overlay */}
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/60 to-transparent z-10" />
@@ -946,7 +956,7 @@ export default function App() {
               </div>
 
               {/* Grid of Schedules */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+              <div className={`grid grid-cols-1 ${isResponsiveSimulated ? "" : "sm:grid-cols-2 lg:grid-cols-5"} gap-4`}>
                 
                 {/* 1. Pendaftaran */}
                 <div className="bg-slate-50 border border-slate-200/65 p-4 rounded-2xl flex flex-col justify-between hover:ring-2 hover:ring-slate-300 hover:bg-slate-100 transition-all">
@@ -1020,8 +1030,8 @@ export default function App() {
             <div className="bg-gradient-to-br from-slate-900 to-indigo-950 text-white rounded-3xl p-6 sm:p-10 shadow-xl border border-slate-800 w-full relative overflow-hidden">
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,rgba(245,158,11,0.08),transparent_50%)]" />
               
-              <div className="relative grid grid-cols-1 md:grid-cols-4 gap-8 items-stretch">
-                <div className="md:col-span-1 text-center flex flex-col justify-center items-center space-y-3.5 h-full">
+              <div className={`relative grid grid-cols-1 ${isResponsiveSimulated ? "" : "md:grid-cols-4"} gap-8 items-stretch`}>
+                <div className={`${isResponsiveSimulated ? "" : "md:col-span-1"} text-center flex flex-col justify-center items-center space-y-3.5 h-full`}>
                   <div className="relative inline-block w-full max-w-[170px] md:max-w-none">
                     <div className="absolute inset-0 bg-amber-500 rounded-2xl rotate-3 transform scale-102" />
                     <div className="relative w-full aspect-[4/5] rounded-2xl overflow-hidden shadow-lg border border-white/10 bg-slate-800 flex items-center justify-center">
@@ -1049,7 +1059,7 @@ export default function App() {
                 </div>
 
                 {/* Welcoming Address content */}
-                <div className="md:col-span-3 space-y-4 flex flex-col justify-center">
+                <div className={`${isResponsiveSimulated ? "" : "md:col-span-3"} space-y-4 flex flex-col justify-center`}>
                   <div className="flex items-center gap-2">
                     <span className="h-0.5 w-8 bg-amber-400"></span>
                     <span className="text-amber-400 text-xs font-black tracking-widest uppercase font-mono">SAMBUTAN KEPALA SEKOLAH</span>
@@ -1107,7 +1117,7 @@ export default function App() {
                 </div>
 
                 {/* Level 2: Wakil-wakil Kepala Sekolah Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className={`grid grid-cols-1 ${isResponsiveSimulated ? "" : "sm:grid-cols-2 lg:grid-cols-4"} gap-6`}>
                   
                   {/* Anita Pauriska, S.Pd */}
                   <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm text-center relative group hover:shadow-md transition">
@@ -1223,7 +1233,7 @@ export default function App() {
               </div>
 
               {/* Process map hierarchy block */}
-              <div className="bg-slate-50 border border-slate-200 rounded-3xl p-6 sm:p-8 grid grid-cols-1 md:grid-cols-4 gap-6 text-center font-sans">
+              <div className={`bg-slate-50 border border-slate-200 rounded-3xl p-6 sm:p-8 grid grid-cols-1 ${isResponsiveSimulated ? "" : "md:grid-cols-4"} gap-6 text-center font-sans`}>
                 
                 {/* Penanggung Jawab */}
                 <div className="bg-white rounded-2xl p-4 border border-slate-150 shadow-sm flex flex-col justify-between">
@@ -1269,7 +1279,7 @@ export default function App() {
             </div>
 
             {/* PROFILE NEGARA & VISI MISI (Highly polished public-themed grids) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
+            <div className={`grid grid-cols-1 ${isResponsiveSimulated ? "" : "md:grid-cols-2"} gap-8 pt-4`}>
               
               {/* Left Column: Visi, Misi & Nilai Inti with Local Interactive Tab selection */}
               <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 space-y-5 shadow-sm flex flex-col justify-between">
@@ -1510,7 +1520,7 @@ export default function App() {
                 <p className="text-slate-500 text-xs font-sans mt-1">Kuota tampung resmi yang diperebutkan melalui jalur Merit-System ujian CBT.</p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className={`grid grid-cols-1 ${isResponsiveSimulated ? "" : "md:grid-cols-2"} gap-6`}>
                 {[
                   {
                     title: "MIPA",
@@ -1574,7 +1584,7 @@ export default function App() {
           <div className="space-y-10 animate-in fade-in duration-300">
             
             {/* Persyaratan Dokumen & Alur Detail */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+            <div className={`grid grid-cols-1 ${isResponsiveSimulated ? "" : "lg:grid-cols-2"} gap-8 items-start`}>
               
               {/* Persyaratan Dokumen Card */}
               <div className="bg-white border border-slate-200 rounded-3xl p-6 md:p-8 shadow-sm space-y-6">
@@ -1886,7 +1896,7 @@ export default function App() {
                     📍 Silahkan tentukan titik rumah / tempat tinggal anda dengan menekan/klik koordinat pada area Peta Radar GPS Interaktif di bawah ini untuk menghitung koordinat dan jarak domisili ke sekolah secara otomatis.
                   </p>
 
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+                  <div className={`grid grid-cols-1 ${isResponsiveSimulated ? "" : "lg:grid-cols-2"} gap-6 items-start`}>
                     {/* Integrated Interactive Vector GIS Click-To-Pin Map */}
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
@@ -2421,7 +2431,7 @@ export default function App() {
                       </div>
 
                       {/* Status display container */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                      <div className={`grid grid-cols-1 ${isResponsiveSimulated ? "" : "md:grid-cols-2"} gap-6 items-start`}>
                         
                         <div className="bg-slate-50 rounded-2xl p-5 border border-slate-150 space-y-4">
                           <h5 className="text-xs font-bold text-slate-500 uppercase tracking-widest font-sans border-b border-light pb-1.5">Informasi Hasil Seleksi</h5>
@@ -2682,7 +2692,7 @@ export default function App() {
               // Authenticated Admin Dashboard main panel
               <div className="space-y-8 animate-in fade-in duration-200">
                 {/* Admin Grid Layout with Left Sidebar & Right Viewports */}
-                <div className="grid grid-cols-1 lg:grid-cols-[250px_1fr] gap-6 items-start">
+                <div className={`grid grid-cols-1 ${isResponsiveSimulated ? "" : "lg:grid-cols-[250px_1fr]"} gap-6 items-start`}>
                   
                   {/* Left Column: Admin Navigation Sidebar */}
                   <div className={`p-5 rounded-2xl text-white bg-gradient-to-b ${
@@ -3226,7 +3236,7 @@ ${editRejection ? `⚠️ Catatan Evaluasi Berkas:\n_"${editRejection}"_\n\n` : 
                     {/* PAGE 4: Settings & Dates landing configuration with explicit save actions */}
                     {adminActiveTab === "pengaturan" && (
                       <div className="space-y-4 animate-in fade-in duration-200">
-                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+                        <div className={`grid grid-cols-1 ${isResponsiveSimulated ? "" : "xl:grid-cols-2"} gap-5`}>
                           
                           {/* Inner settings card */}
                           <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-4 text-xs">
@@ -3302,7 +3312,7 @@ ${editRejection ? `⚠️ Catatan Evaluasi Berkas:\n_"${editRejection}"_\n\n` : 
                         </div>
 
                         {/* LIVE LANDING PAGE COGNITIVE CONTENT EDITORS */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div className={`grid grid-cols-1 ${isResponsiveSimulated ? "" : "md:grid-cols-2"} gap-5`}>
                           
                           {/* CARD A: SAMBUTAN & STRUKTUR SEKOLAH */}
                           <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-3.5 text-xs">
@@ -4776,6 +4786,8 @@ ${editRejection ? `⚠️ Catatan Evaluasi Berkas:\n_"${editRejection}"_\n\n` : 
 
       {/* Persistent Gemini Conversational Tutor Assistant Widget bottom floating */}
       <AIAssistant isSimulated={deviceMode !== "desktop"} />
+
+        </div>
 
       </div>
 
