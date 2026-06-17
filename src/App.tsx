@@ -55,6 +55,20 @@ export default function App() {
   const [deviceMode, setDeviceMode] = useState<"desktop" | "tablet" | "mobile">("desktop");
   const [visiMisiTab, setVisiMisiTab] = useState<"visi" | "nilai">("visi");
 
+  // Check if we are running in an embed/iframe simulation mode
+  const isEmbed = typeof window !== "undefined" && window.location.search.includes("embed=true");
+
+  // Read URL query parameters to support iframe synchronization
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get("tab");
+      if (tabParam && ["beranda", "alur-biaya", "daftar", "cek-status", "admin"].includes(tabParam)) {
+        setCurrentTab(tabParam as any);
+      }
+    }
+  }, []);
+
   // Registration Form State
   const [formInput, setFormInput] = useState({
     fullName: "",
@@ -552,57 +566,69 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col antialiased selection:bg-blue-650 selection:text-white">
       
-      {/* Simulator Device Viewport Switcher - Only visible on actual Desktop screens */}
-      <div className="hidden lg:flex bg-slate-900 text-slate-100 px-4 py-2.5 flex-col lg:flex-row items-center justify-between gap-3 text-xs border-b border-slate-800 shrink-0 sticky top-0 z-[100] no-print">
-        <div className="flex items-center gap-2">
-          <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-          <span className="font-extrabold uppercase tracking-wider font-sans text-[11px] text-slate-200">
-            SIMULASI LAYAR RESPONSIF:
-          </span>
-          <span className="text-[10px] text-slate-400 font-sans font-medium">
-            (Tekan tombol untuk mensimulasikan kegunaan di layar HP, Tablet, atau Desktop secara langsung)
-          </span>
+      {/* Simulator Device Viewport Switcher - Only visible on actual Desktop screens and NOT inside the simulated frame iframe */}
+      {!isEmbed && (
+        <div className="hidden lg:flex bg-slate-900 text-slate-100 px-4 py-2.5 flex-col lg:flex-row items-center justify-between gap-3 text-xs border-b border-slate-800 shrink-0 sticky top-0 z-[100] no-print">
+          <div className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+            <span className="font-extrabold uppercase tracking-wider font-sans text-[11px] text-slate-200">
+              SIMULASI LAYAR RESPONSIF:
+            </span>
+            <span className="text-[10px] text-slate-400 font-sans font-medium">
+              (Tekan tombol untuk mensimulasikan kegunaan di layar HP, Tablet, atau Desktop secara langsung)
+            </span>
+          </div>
+          <div className="flex items-center gap-1 bg-slate-800 p-0.5 rounded-xl border border-slate-700 shrink-0">
+            <button
+              onClick={() => setDeviceMode("desktop")}
+              className={`px-3 py-1.5 rounded-lg font-bold font-sans transition-all flex items-center gap-1.5 cursor-pointer border-0 ${
+                deviceMode === "desktop" ? "bg-blue-600 text-white shadow-md inline-flex" : "text-slate-400 hover:text-white hover:bg-slate-700"
+              }`}
+            >
+              <i className="fa-solid fa-desktop text-xs"></i>
+              <span>Desktop</span>
+            </button>
+            <button
+              onClick={() => setDeviceMode("tablet")}
+              className={`px-3 py-1.5 rounded-lg font-bold font-sans transition-all flex items-center gap-1.5 cursor-pointer border-0 ${
+                deviceMode === "tablet" ? "bg-blue-600 text-white shadow-md inline-flex" : "text-slate-400 hover:text-white hover:bg-slate-700"
+              }`}
+            >
+              <i className="fa-solid fa-tablet-screen-button text-xs"></i>
+              <span>Tablet (iPad)</span>
+            </button>
+            <button
+              onClick={() => setDeviceMode("mobile")}
+              className={`px-3 py-1.5 rounded-lg font-bold font-sans transition-all flex items-center gap-1.5 cursor-pointer border-0 ${
+                deviceMode === "mobile" ? "bg-blue-600 text-white shadow-md inline-flex" : "text-slate-400 hover:text-white hover:bg-slate-700"
+              }`}
+            >
+              <i className="fa-solid fa-mobile-screen-button text-xs"></i>
+              <span>Smartphone (HP)</span>
+            </button>
+          </div>
         </div>
-        <div className="flex items-center gap-1 bg-slate-800 p-0.5 rounded-xl border border-slate-700 shrink-0">
-          <button
-            onClick={() => setDeviceMode("desktop")}
-            className={`px-3 py-1.5 rounded-lg font-bold font-sans transition-all flex items-center gap-1.5 cursor-pointer border-0 ${
-              deviceMode === "desktop" ? "bg-blue-600 text-white shadow-md inline-flex" : "text-slate-400 hover:text-white hover:bg-slate-700"
-            }`}
-          >
-            <i className="fa-solid fa-desktop text-xs"></i>
-            <span>Desktop</span>
-          </button>
-          <button
-            onClick={() => setDeviceMode("tablet")}
-            className={`px-3 py-1.5 rounded-lg font-bold font-sans transition-all flex items-center gap-1.5 cursor-pointer border-0 ${
-              deviceMode === "tablet" ? "bg-blue-600 text-white shadow-md inline-flex" : "text-slate-400 hover:text-white hover:bg-slate-700"
-            }`}
-          >
-            <i className="fa-solid fa-tablet-screen-button text-xs"></i>
-            <span>Tablet (iPad)</span>
-          </button>
-          <button
-            onClick={() => setDeviceMode("mobile")}
-            className={`px-3 py-1.5 rounded-lg font-bold font-sans transition-all flex items-center gap-1.5 cursor-pointer border-0 ${
-              deviceMode === "mobile" ? "bg-blue-600 text-white shadow-md inline-flex" : "text-slate-400 hover:text-white hover:bg-slate-700"
-            }`}
-          >
-            <i className="fa-solid fa-mobile-screen-button text-xs"></i>
-            <span>Smartphone (HP)</span>
-          </button>
-        </div>
-      </div>
+      )}
 
-      {/* Actual Application Outer Shell - only apply mock frame styling on large screen sizes when simulated */}
+      {/* Actual Application Outer Shell - only apply mock frame styling on large screen sizes when simulated and NOT inside an embed */}
       <div className={`transition-all duration-300 flex-1 flex flex-col bg-white overflow-hidden relative ${
-        deviceMode === "mobile" ? "lg:max-w-[420px] lg:w-full lg:mx-auto lg:my-6 lg:border-[12px] lg:border-slate-800 lg:rounded-[36px] lg:shadow-2xl lg:h-[844px] lg:overflow-y-auto w-full min-h-screen" :
-        deviceMode === "tablet" ? "lg:max-w-[768px] lg:w-full lg:mx-auto lg:my-6 lg:border-[10px] lg:border-slate-800 lg:rounded-[24px] lg:shadow-xl lg:h-[1024px] lg:overflow-y-auto w-full min-h-screen" :
+        (!isEmbed && deviceMode === "mobile") ? "lg:max-w-[420px] lg:w-full lg:mx-auto lg:my-6 lg:border-[12px] lg:border-slate-800 lg:rounded-[36px] lg:shadow-2xl lg:h-[844px] w-full min-h-screen" :
+        (!isEmbed && deviceMode === "tablet") ? "lg:max-w-[768px] lg:w-full lg:mx-auto lg:my-6 lg:border-[10px] lg:border-slate-800 lg:rounded-[24px] lg:shadow-xl lg:h-[1024px] w-full min-h-screen" :
         "w-full min-h-screen"
       }`}>
       
-        {/* Decorative colored bar top headers */}
-        <div className="h-1.5 bg-gradient-to-r from-blue-700 via-indigo-600 to-amber-500 w-full shrink-0" />
+        {!isEmbed && (deviceMode === "mobile" || deviceMode === "tablet") ? (
+          <div className="w-full h-full flex-1 bg-slate-900">
+            <iframe 
+              src={`${window.location.origin}${window.location.pathname}?embed=true&tab=${currentTab}`}
+              title="Smartphone Viewport Simulator"
+              className="w-full h-full border-0 block"
+            />
+          </div>
+        ) : (
+          <>
+            {/* Decorative colored bar top headers */}
+            <div className="h-1.5 bg-gradient-to-r from-blue-700 via-indigo-600 to-amber-500 w-full shrink-0" />
 
       {/* Persistent global toast notifications */}
       {alertMsg && (
@@ -4776,6 +4802,8 @@ ${editRejection ? `⚠️ Catatan Evaluasi Berkas:\n_"${editRejection}"_\n\n` : 
 
       {/* Persistent Gemini Conversational Tutor Assistant Widget bottom floating */}
       <AIAssistant isSimulated={deviceMode !== "desktop"} />
+          </>
+        )}
 
       </div>
 
