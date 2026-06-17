@@ -552,8 +552,8 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col antialiased selection:bg-blue-650 selection:text-white">
       
-      {/* Simulator Device Viewport Switcher */}
-      <div className="bg-slate-900 text-slate-100 px-4 py-2.5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs border-b border-slate-800 shrink-0 sticky top-0 z-[100] no-print">
+      {/* Simulator Device Viewport Switcher - Only visible on actual Desktop screens */}
+      <div className="hidden lg:flex bg-slate-900 text-slate-100 px-4 py-2.5 flex-col lg:flex-row items-center justify-between gap-3 text-xs border-b border-slate-800 shrink-0 sticky top-0 z-[100] no-print">
         <div className="flex items-center gap-2">
           <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
           <span className="font-extrabold uppercase tracking-wider font-sans text-[11px] text-slate-200">
@@ -594,10 +594,10 @@ export default function App() {
         </div>
       </div>
 
-      {/* Actual Application Outer Shell */}
+      {/* Actual Application Outer Shell - only apply mock frame styling on large screen sizes when simulated */}
       <div className={`transition-all duration-300 flex-1 flex flex-col bg-white overflow-hidden relative ${
-        deviceMode === "mobile" ? "max-w-[420px] w-full mx-auto my-6 border-[12px] border-slate-800 rounded-[36px] shadow-2xl h-[844px] overflow-y-auto" :
-        deviceMode === "tablet" ? "max-w-[768px] w-full mx-auto my-6 border-[10px] border-slate-800 rounded-[24px] shadow-xl h-[1024px] overflow-y-auto" :
+        deviceMode === "mobile" ? "lg:max-w-[420px] lg:w-full lg:mx-auto lg:my-6 lg:border-[12px] lg:border-slate-800 lg:rounded-[36px] lg:shadow-2xl lg:h-[844px] lg:overflow-y-auto w-full min-h-screen" :
+        deviceMode === "tablet" ? "lg:max-w-[768px] lg:w-full lg:mx-auto lg:my-6 lg:border-[10px] lg:border-slate-800 lg:rounded-[24px] lg:shadow-xl lg:h-[1024px] lg:overflow-y-auto w-full min-h-screen" :
         "w-full min-h-screen"
       }`}>
       
@@ -804,18 +804,18 @@ export default function App() {
                     <div className="w-[120%] h-[120%] bg-[radial-gradient(circle,rgba(255,255,255,0.07)_1px,transparent_1px)] [background-size:24px_24px] rotate-12" />
                   </div>
 
-                  {/* Absolute Badge Category */}
-                  <div className="absolute top-4 left-4 sm:top-6 sm:left-6 z-20 flex flex-wrap gap-1.5">
-                    <span className="bg-red-600 text-white font-extrabold text-[9px] tracking-widest uppercase px-3 py-1.5 rounded-full shadow-md">
-                      SOROTAN UTAMA
-                    </span>
-                    <span className="bg-blue-600/90 text-white font-extrabold text-[9px] tracking-widest uppercase px-3 py-1.5 rounded-full shadow-md backdrop-blur">
-                      SPMB TA {settings.tahunPendaftaran}
-                    </span>
-                  </div>
-
                   {/* Lower Text content - natural layout inside flex-end container prevents absolute overlap */}
-                  <div className="relative z-20 p-5 sm:p-8 space-y-4 pt-20 mt-auto bg-gradient-to-t from-slate-950 via-slate-950/90 to-transparent">
+                  <div className="relative z-20 p-5 sm:p-8 space-y-4 pt-12 mt-auto bg-gradient-to-t from-slate-950 via-slate-950/90 to-transparent">
+                    {/* Category badges aligned inside flow layout */}
+                    <div className="flex flex-wrap gap-1.5 pb-1">
+                      <span className="bg-red-650 text-white font-extrabold text-[9px] tracking-widest uppercase px-3 py-1.5 rounded-full shadow-md">
+                        SOROTAN UTAMA
+                      </span>
+                      <span className="bg-blue-600/90 text-white font-extrabold text-[9px] tracking-widest uppercase px-3 py-1.5 rounded-full shadow-md backdrop-blur">
+                        SPMB TA {settings.tahunPendaftaran}
+                      </span>
+                    </div>
+
                     <div className="flex items-center gap-2 text-[10px] sm:text-xs text-amber-400 font-bold">
                       <i className="fa-solid fa-clock"></i>
                       <span>Dipublikasikan: Baru Saja</span>
@@ -3971,7 +3971,7 @@ ${editRejection ? `⚠️ Catatan Evaluasi Berkas:\n_"${editRejection}"_\n\n` : 
                 </li>
                 <li>
                   <button onClick={() => setKabarDetail("program")} className="hover:text-amber-400 transition cursor-pointer text-left font-semibold">
-                    <i className="fa-solid fa-angle-right mr-1 text-slate-600"></i> Program Unggulan Kampus
+                    <i className="fa-solid fa-angle-right mr-1 text-slate-600"></i> Program Unggulan Sekolah
                   </button>
                 </li>
                 <li>
@@ -4124,7 +4124,7 @@ ${editRejection ? `⚠️ Catatan Evaluasi Berkas:\n_"${editRejection}"_\n\n` : 
                         <strong className="text-slate-800">Swasta Plus (Angkatan Pertama)</strong>
                       </div>
                       <div className="flex justify-between border-b border-slate-100 pb-1.5">
-                        <span className="text-slate-400 font-medium">5. Alamat Kampus</span>
+                        <span className="text-slate-400 font-medium">5. Alamat Sekolah</span>
                         <strong className="text-slate-800 text-right max-w-[200px] leading-tight">Jalan Pendidikan No.32, Kel. Sumber Rejo, Kec. Kemiling, Bandar Lampung</strong>
                       </div>
                       <div className="flex justify-between border-b border-slate-100 pb-1.5">
