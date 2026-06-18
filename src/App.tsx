@@ -48,14 +48,16 @@ export default function App() {
           parsed.welcomeTitle = INITIAL_SETTINGS.welcomeTitle;
           parsed.welcomeText = INITIAL_SETTINGS.welcomeText;
         }
-        // Force upgrade the old defaults to the new, locked dates & quotas requested for production
-        if (parsed.kuotaMIPA === 120 || parsed.kuotaMIPA === undefined) parsed.kuotaMIPA = INITIAL_SETTINGS.kuotaMIPA;
-        if (parsed.kuotaIPS === 90 || parsed.kuotaIPS === undefined) parsed.kuotaIPS = INITIAL_SETTINGS.kuotaIPS;
-        if (parsed.tglPendaftaran === "10 Juni s.d 30 Juni 2026" || parsed.tglPendaftaran === undefined) parsed.tglPendaftaran = INITIAL_SETTINGS.tglPendaftaran;
-        if (parsed.tglVerifikasi === "11 Juni s.d 02 Juli 2026" || parsed.tglVerifikasi === undefined) parsed.tglVerifikasi = INITIAL_SETTINGS.tglVerifikasi;
-        if (parsed.tglPengumuman === "05 Juli 2026" || parsed.tglPengumuman === undefined) parsed.tglPengumuman = INITIAL_SETTINGS.tglPengumuman;
-        if (parsed.tglDaftarUlang === "06 Juli s.d 12 Juli 2026" || parsed.tglDaftarUlang === undefined) parsed.tglDaftarUlang = INITIAL_SETTINGS.tglDaftarUlang;
-        return { ...INITIAL_SETTINGS, ...parsed };
+        const merged = { ...INITIAL_SETTINGS, ...parsed };
+        // Force lock the vital parameters requested across all deployments and accounts
+        merged.kuotaMIPA = INITIAL_SETTINGS.kuotaMIPA; // 60
+        merged.kuotaIPS = INITIAL_SETTINGS.kuotaIPS; // 60
+        merged.schoolAddress = INITIAL_SETTINGS.schoolAddress;
+        merged.schoolPhones = INITIAL_SETTINGS.schoolPhones;
+        merged.schoolEmails = INITIAL_SETTINGS.schoolEmails;
+        merged.schoolWebsites = INITIAL_SETTINGS.schoolWebsites;
+        merged.schoolLayananPenerimaan = INITIAL_SETTINGS.schoolLayananPenerimaan;
+        return merged;
       } catch (e) {
         console.error(e);
       }
@@ -116,8 +118,13 @@ export default function App() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // Google Auth & Workspace Sync States
-  const [googleUser, setGoogleUser] = useState<any>(null);
-  const [googleToken, setGoogleToken] = useState<string | null>(null);
+  const [googleUser, setGoogleUser] = useState<any>(() => {
+    const saved = localStorage.getItem("spmb_google_user");
+    return saved ? JSON.parse(saved) : null;
+  });
+  const [googleToken, setGoogleToken] = useState<string | null>(() => {
+    return localStorage.getItem("spmb_google_token");
+  });
   const [isLoggingGoogle, setIsLoggingGoogle] = useState(false);
   const [isSyncingSheets, setIsSyncingSheets] = useState(false);
   const [isBackupDrive, setIsBackupDrive] = useState(false);
@@ -154,6 +161,8 @@ export default function App() {
         const { user, accessToken } = event.data;
         setGoogleUser(user);
         setGoogleToken(accessToken);
+        localStorage.setItem("spmb_google_user", JSON.stringify(user));
+        localStorage.setItem("spmb_google_token", accessToken);
         showAlert("success", `Berhasil tersambung dengan Google: ${user.displayName}`);
         setSyncStatus(null);
       }
@@ -595,7 +604,8 @@ export default function App() {
       if (isCustomDomain) {
         // When running on a custom domain like Vercel, Firebase popups from this domain will fail with "unauthorized-domain".
         // Instead, we open a popup window pointing to our authorized container URL with state.
-        const containerUrl = "https://ais-pre-ygw7we2reebi6v2zbxsjfd-874389783997.asia-southeast1.run.app";
+        // Using the active development container domain for OAuth authorization popup on custom domains
+        const containerUrl = "https://ais-dev-ygw7we2reebi6v2zbxsjfd-874389783997.asia-southeast1.run.app";
         const authPopupUrl = `${containerUrl}?mode=auth-popup&origin=${encodeURIComponent(window.location.origin)}`;
         
         const popup = window.open(authPopupUrl, "SPMB_Google_Auth", "width=500,height=600,scrollbars=yes,resizable=yes");
@@ -1813,7 +1823,7 @@ export default function App() {
                   <div className="h-5 w-1 bg-blue-700 rounded-full" />
                   Peminatan & Alokasi Kursi (SPMB)
                 </h3>
-                <p className="text-slate-500 text-xs font-sans mt-1">Kuota tampung resmi yang diperebutkan melalui jalur Merit-System ujian CBT.</p>
+                <p className="text-slate-500 text-xs font-sans mt-1">Kuota tampung resmi penerimaan siswa baru SMA Bintang Plus.</p>
               </div>
 
               <div className={`grid grid-cols-1 ${isResponsiveSimulated ? "" : "md:grid-cols-2"} gap-6`}>
@@ -4142,8 +4152,18 @@ ${editRejection ? `⚠️ Catatan Evaluasi Berkas:\n_"${editRejection}"_\n\n` : 
                             <button
                               type="button"
                               onClick={() => {
-                                setSettings(draftSettings);
-                                localStorage.setItem("spmb_settings", JSON.stringify(draftSettings));
+                                const lockedDraft = {
+                                  ...draftSettings,
+                                  kuotaMIPA: INITIAL_SETTINGS.kuotaMIPA,
+                                  kuotaIPS: INITIAL_SETTINGS.kuotaIPS,
+                                  schoolAddress: INITIAL_SETTINGS.schoolAddress,
+                                  schoolPhones: INITIAL_SETTINGS.schoolPhones,
+                                  schoolEmails: INITIAL_SETTINGS.schoolEmails,
+                                  schoolWebsites: INITIAL_SETTINGS.schoolWebsites,
+                                  schoolLayananPenerimaan: INITIAL_SETTINGS.schoolLayananPenerimaan,
+                                };
+                                setSettings(lockedDraft);
+                                localStorage.setItem("spmb_settings", JSON.stringify(lockedDraft));
                                 showAlert("success", "Setelan SPMB berhasil disimpan permanen!");
                               }}
                               className={`w-1/2 sm:w-auto font-bold px-4 py-2 rounded-xl text-xs transition border-0 cursor-pointer text-white flex items-center justify-center gap-1 shadow ${

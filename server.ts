@@ -46,9 +46,8 @@ Informasi Resmi Sekolah & SPMB SMA Bintang Plus Bandar Lampung:
 4. **Alur Pendaftaran SPMB**:
    - Langkah 1: Registrasi akun & Isi formulir pendaftaran secara online.
    - Langkah 2: Unggah dokumen pendukung (Kartu Keluarga, Akta Kelahiran, Ijazah/Surat Keterangan Lulus, dan Pas Foto 3x4).
-   - Langkah 3: Mengikuti Uji Seleksi Kompetensi Dasar secara online (CBT) di portal SPMB ini.
-   - Langkah 4: Mengikuti Tes Wawancara (bisa daring/luring).
-   - Langkah 5: Pengumuman hasil akhir di dashboard portal SPMB masing-masing.
+   - Langkah 3: Proses verifikasi kelengkapan berkas administrasi secara online oleh Panitia.
+   - Langkah 4: Pengumuman kelulusan serta lapor diri/daftar ulang.
 5. **Syarat Pendaftaran**:
    - Lulus SMP/MTs sederajat.
    - Usia maksimal 21 tahun pada tahun pendaftaran berjalan.

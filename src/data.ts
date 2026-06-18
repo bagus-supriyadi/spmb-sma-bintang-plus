@@ -4,8 +4,8 @@ export const INITIAL_SETTINGS: SPMBSettings = {
   schoolName: "SMA Bintang Plus Bandar Lampung",
   statusPendaftaran: "Buka",
   tahunPendaftaran: "2026",
-  kuotaMIPA: 75,
-  kuotaIPS: 75,
+  kuotaMIPA: 60,
+  kuotaIPS: 60,
   tglPendaftaran: "10 Juni s.d 05 Juli 2026",
   tglVerifikasi: "11 Juni s.d 07 Juli 2026",
   tglPengumuman: "08 Juli 2026",
@@ -38,12 +38,12 @@ export const INITIAL_SETTINGS: SPMBSettings = {
   namaPanitiaKetua: "Anita Pauriska, S.Pd",
   namaPanitiaSekretaris: "Sri Ayu Wahyuni, S.pd",
   namaPanitiaBendahara: "Afrilia Siska Yanti, S.Si",
-
+ 
   // Geography & contact fields
   schoolAddress: "SMA Bintang Plus, Jalan Pendidikan No.32-B, Kelurahan Sumber Rejo, Kecamatan Kemiling, Kota Bandar Lampung, 35152",
-  schoolPhones: ["0895-0331-2895"],
+  schoolPhones: ["0895-0331-2895", "0821-7194-1727"],
   schoolEmails: ["smabintangplus@gmail.com"],
-  schoolWebsites: ["https://katakita-group.biz.id/"],
+  schoolWebsites: ["https://katakita-group.biz.id/", "https://bagus-supriyadi.biz.id/"],
   schoolLayananPenerimaan: "Senin - Jumat (07.30 - 15.30 WIB)",
 
   // Requirements & steps
