@@ -125,6 +125,45 @@ export default function App() {
   const [syncDriveFolderId, setSyncDriveFolderId] = useState("1fSJYkrfOUc_HAjAZuGIGUgkJ3SMhKMtu");
   const [syncStatus, setSyncStatus] = useState<{ success?: boolean; message: string; sheetsUrl?: string; driveFileUrl?: string } | null>(null);
 
+  // States for cross-origin popup auth fallback
+  const [authPopupMode, setAuthPopupMode] = useState(false);
+  const [authPopupOrigin, setAuthPopupOrigin] = useState("");
+
+  // Extract query parameters for mode recognition
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const mode = searchParams.get("mode");
+    const origin = searchParams.get("origin");
+    if (mode === "auth-popup") {
+      setAuthPopupMode(true);
+      if (origin) {
+        setAuthPopupOrigin(origin);
+      }
+    }
+  }, []);
+
+  // Listen for login token when we are the parent window on Vercel
+  useEffect(() => {
+    const handleGoogleAuthMessage = (event: MessageEvent) => {
+      const origin = event.origin;
+      // Allow messages from any preview/production run.app URL or localhost
+      if (!origin.endsWith(".run.app") && !origin.includes("localhost")) {
+        return;
+      }
+      if (event.data && event.data.type === "GOOGLE_AUTH_SUCCESS") {
+        const { user, accessToken } = event.data;
+        setGoogleUser(user);
+        setGoogleToken(accessToken);
+        showAlert("success", `Berhasil tersambung dengan Google: ${user.displayName}`);
+        setSyncStatus(null);
+      }
+    };
+    window.addEventListener("message", handleGoogleAuthMessage);
+    return () => {
+      window.removeEventListener("message", handleGoogleAuthMessage);
+    };
+  }, []);
+
   useEffect(() => {
     const unsubscribe = initAuth(
       (user, token) => {
@@ -551,17 +590,39 @@ export default function App() {
     setIsLoggingGoogle(true);
     setSyncStatus(null);
     try {
-      const res = await googleSignIn();
-      if (res) {
-        setGoogleUser(res.user);
-        setGoogleToken(res.accessToken);
-        showAlert("success", `Berhasil masuk dengan akun Google: ${res.user.displayName}`);
+      const isCustomDomain = window.location.hostname !== "localhost" && !window.location.hostname.endsWith(".run.app");
+      
+      if (isCustomDomain) {
+        // When running on a custom domain like Vercel, Firebase popups from this domain will fail with "unauthorized-domain".
+        // Instead, we open a popup window pointing to our authorized container URL with state.
+        const containerUrl = "https://ais-pre-ygw7we2reebi6v2zbxsjfd-874389783997.asia-southeast1.run.app";
+        const authPopupUrl = `${containerUrl}?mode=auth-popup&origin=${encodeURIComponent(window.location.origin)}`;
+        
+        const popup = window.open(authPopupUrl, "SPMB_Google_Auth", "width=500,height=600,scrollbars=yes,resizable=yes");
+        if (!popup) {
+          showAlert("error", "Popup diblokir browser! Harap izinkan popup untuk situs ini agar bisa menghubungkan Google.");
+          setIsLoggingGoogle(false);
+        } else {
+          // Check if popup is closed by the user eventually
+          const timer = setInterval(() => {
+            if (popup.closed) {
+              clearInterval(timer);
+              setIsLoggingGoogle(false);
+            }
+          }, 1000);
+        }
+      } else {
+        const res = await googleSignIn();
+        if (res) {
+          setGoogleUser(res.user);
+          setGoogleToken(res.accessToken);
+          showAlert("success", `Berhasil masuk dengan akun Google: ${res.user.displayName}`);
+        }
       }
     } catch (err: any) {
       console.error(err);
       setSyncStatus({ success: false, message: `Gagal Otentikasi: ${err.message || err}` });
       showAlert("error", "Otentikasi Google gagal.");
-    } finally {
       setIsLoggingGoogle(false);
     }
   };
@@ -581,15 +642,8 @@ export default function App() {
   const handleSyncToSheets = async () => {
     let activeToken = googleToken;
     if (!activeToken) {
-      const res = await googleSignIn();
-      if (res) {
-        setGoogleUser(res.user);
-        setGoogleToken(res.accessToken);
-        activeToken = res.accessToken;
-      } else {
-        showAlert("error", "Silakan hubungkan akun Google terlebih dahulu.");
-        return;
-      }
+      showAlert("error", "Silakan hubungkan akun Google terlebih dahulu di bagian bawah.");
+      return;
     }
 
     setIsSyncingSheets(true);
@@ -614,15 +668,8 @@ export default function App() {
   const handleUploadBackup = async () => {
     let activeToken = googleToken;
     if (!activeToken) {
-      const res = await googleSignIn();
-      if (res) {
-        setGoogleUser(res.user);
-        setGoogleToken(res.accessToken);
-        activeToken = res.accessToken;
-      } else {
-        showAlert("error", "Silakan hubungkan akun Google terlebih dahulu.");
-        return;
-      }
+      showAlert("error", "Silakan hubungkan akun Google terlebih dahulu di bagian bawah.");
+      return;
     }
 
     setIsBackupDrive(true);
@@ -689,6 +736,115 @@ export default function App() {
   };
 
   const fees = calculateFees();
+
+  if (authPopupMode) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center p-6 text-white font-sans text-center">
+        <div className="max-w-md w-full bg-slate-800 border border-slate-700/60 p-8 rounded-3xl shadow-2xl space-y-6">
+          <div className="inline-flex items-center justify-center h-16 w-16 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+            <FileSpreadsheet className="w-8 h-8 hover:scale-110 transition-transform duration-300" />
+          </div>
+          
+          <div className="space-y-2">
+            <h1 className="text-lg font-black tracking-tight text-amber-300">Otentikasi Akun Google</h1>
+            <p className="text-xs text-slate-300 leading-relaxed font-sans">
+              Menghubungkan integrasi Google Sheets &amp; Google Drive ke portal SPMB Anda di <span className="font-bold text-indigo-300">{authPopupOrigin}</span>.
+            </p>
+          </div>
+
+          {googleUser ? (
+            <div className="space-y-4">
+              <div className="bg-emerald-500/15 border border-emerald-500/25 rounded-2xl p-4 flex items-center gap-3 text-left">
+                <div className="h-10 w-10 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold text-sm shadow overflow-hidden">
+                  {googleUser.photoURL ? (
+                    <img src={googleUser.photoURL} alt="Google avatar" className="h-full w-full object-cover" referrerpolicy="no-referrer" />
+                  ) : (
+                    googleUser.displayName?.charAt(0) || "G"
+                  )}
+                </div>
+                <div>
+                  <p className="font-bold text-emerald-300 flex items-center gap-1 text-xs">
+                    <span>Terhubung dengan Google</span>
+                  </p>
+                  <p className="text-[10px] text-emerald-400 mt-0.5 font-mono">{googleUser.email}</p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => {
+                  if (window.opener && authPopupOrigin) {
+                    window.opener.postMessage({
+                      type: "GOOGLE_AUTH_SUCCESS",
+                      user: {
+                        displayName: googleUser.displayName,
+                        email: googleUser.email,
+                        photoURL: googleUser.photoURL,
+                        uid: googleUser.uid,
+                      },
+                      accessToken: googleToken
+                    }, authPopupOrigin);
+                    window.close();
+                  } else {
+                    alert("Tidak dapat mengirim data kembali ke portal induk. Pastikan portal induk tetap terbuka.");
+                  }
+                }}
+                className="w-full bg-emerald-500 hover:bg-emerald-650 active:scale-[0.98] text-white font-bold py-3.5 px-4 rounded-xl text-[10px] transition duration-200 shadow-lg border-0 cursor-pointer uppercase tracking-wider"
+              >
+                SINKRONKAN SEKARANG & KANUTKAN
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <p className="text-[11px] text-slate-400">
+                Klik tombol di bawah untuk masuk akun Google yang sesuai melalui jendela login resmi.
+              </p>
+              
+              <button
+                disabled={isLoggingGoogle}
+                onClick={async () => {
+                  setIsLoggingGoogle(true);
+                  try {
+                    const res = await googleSignIn();
+                    if (res) {
+                      setGoogleUser(res.user);
+                      setGoogleToken(res.accessToken);
+                      if (window.opener && authPopupOrigin) {
+                        window.opener.postMessage({
+                          type: "GOOGLE_AUTH_SUCCESS",
+                          user: {
+                            displayName: res.user.displayName,
+                            email: res.user.email,
+                            photoURL: res.user.photoURL,
+                            uid: res.user.uid,
+                          },
+                          accessToken: res.accessToken
+                        }, authPopupOrigin);
+                        setTimeout(() => {
+                          window.close();
+                        }, 1200);
+                      }
+                    }
+                  } catch (err: any) {
+                    alert("Google Sign In gagal: " + (err.message || err));
+                  } finally {
+                    setIsLoggingGoogle(false);
+                  }
+                }}
+                className="w-full bg-teal-500 hover:bg-teal-600 active:scale-[0.98] text-white font-bold py-3.5 px-4 rounded-xl text-[10px] transition duration-200 shadow-md border-0 cursor-pointer uppercase tracking-wider flex items-center justify-center gap-2"
+              >
+                {isLoggingGoogle ? "Menghubungkan..." : "Hubungkan Akun Google Anda"}
+              </button>
+            </div>
+          )}
+
+          <div className="pt-4 border-t border-slate-700/50 flex justify-between items-center text-[10px] text-slate-500">
+            <span>SPMB SMA Bintang Plus</span>
+            <button onClick={() => window.close()} className="text-slate-400 hover:text-white bg-transparent border-0 cursor-pointer text-[10px] font-bold">Batal / Tutup</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col antialiased selection:bg-blue-650 selection:text-white">
