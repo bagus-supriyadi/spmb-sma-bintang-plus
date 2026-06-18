@@ -9,7 +9,7 @@ import {
   ArrowRight, Users, Sparkles, BookOpen, Clock, MapPin, 
   Award, Key, LogOut, Check, CreditCard, ChevronDown, 
   FolderPlus, Trash2, Edit3, BarChart, Download, FileSpreadsheet, 
-  HelpCircle, CheckCircle2, UserCheck, AlertCircle, PlusCircle, Notebook,
+  HelpCircle, CheckCircle2, UserCheck, AlertCircle, PlusCircle, Notebook, ExternalLink,
   Trophy
 } from "lucide-react";
 import { Major, AdmissionStatus, Applicant, SPMBSettings } from "./types";
@@ -17,6 +17,8 @@ import { INITIAL_APPLICANTS, INITIAL_SETTINGS } from "./data";
 import AIAssistant from "./components/AIAssistant";
 import { jsPDF } from "jspdf";
 import * as XLSX from "xlsx";
+import { initAuth, googleSignIn, logoutGoogle } from "./lib/googleAuth";
+import { syncToGoogleSheets, uploadBackupToDrive } from "./lib/googleSheets";
 
 export default function App() {
   // --- Persistent Storage State ---
@@ -24,7 +26,11 @@ export default function App() {
     const saved = localStorage.getItem("spmb_applicants");
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        // Clean out any old dummy applicants to ensure clean database for live deployment
+        return parsed.filter((app: any) => 
+          app && app.id && !["SPMB-2026-001", "SPMB-2026-002", "SPMB-2026-003", "SPMB-2026-004"].includes(app.id)
+        );
       } catch (e) {
         console.error(e);
       }
@@ -42,6 +48,13 @@ export default function App() {
           parsed.welcomeTitle = INITIAL_SETTINGS.welcomeTitle;
           parsed.welcomeText = INITIAL_SETTINGS.welcomeText;
         }
+        // Force upgrade the old defaults to the new, locked dates & quotas requested for production
+        if (parsed.kuotaMIPA === 120 || parsed.kuotaMIPA === undefined) parsed.kuotaMIPA = INITIAL_SETTINGS.kuotaMIPA;
+        if (parsed.kuotaIPS === 90 || parsed.kuotaIPS === undefined) parsed.kuotaIPS = INITIAL_SETTINGS.kuotaIPS;
+        if (parsed.tglPendaftaran === "10 Juni s.d 30 Juni 2026" || parsed.tglPendaftaran === undefined) parsed.tglPendaftaran = INITIAL_SETTINGS.tglPendaftaran;
+        if (parsed.tglVerifikasi === "11 Juni s.d 02 Juli 2026" || parsed.tglVerifikasi === undefined) parsed.tglVerifikasi = INITIAL_SETTINGS.tglVerifikasi;
+        if (parsed.tglPengumuman === "05 Juli 2026" || parsed.tglPengumuman === undefined) parsed.tglPengumuman = INITIAL_SETTINGS.tglPengumuman;
+        if (parsed.tglDaftarUlang === "06 Juli s.d 12 Juli 2026" || parsed.tglDaftarUlang === undefined) parsed.tglDaftarUlang = INITIAL_SETTINGS.tglDaftarUlang;
         return { ...INITIAL_SETTINGS, ...parsed };
       } catch (e) {
         console.error(e);
@@ -94,13 +107,39 @@ export default function App() {
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
   const [adminPassphrase, setAdminPassphrase] = useState("");
   const [adminError, setAdminError] = useState("");
-  const [adminActiveTab, setAdminActiveTab] = useState<"dashboard" | "pendaftar" | "verifikasi" | "pengaturan">("dashboard");
+  const [adminActiveTab, setAdminActiveTab] = useState<"dashboard" | "pendaftar" | "verifikasi" | "pengaturan" | "sheets">("dashboard");
   const [adminTheme, setAdminTheme] = useState<string>(() => {
     return localStorage.getItem("spmb_admin_theme") || "royal-jade";
   });
   const [auditApplicantId, setAuditApplicantId] = useState<string>("");
   const [lightboxImage, setLightboxImage] = useState<{ src: string; label: string } | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // Google Auth & Workspace Sync States
+  const [googleUser, setGoogleUser] = useState<any>(null);
+  const [googleToken, setGoogleToken] = useState<string | null>(null);
+  const [isLoggingGoogle, setIsLoggingGoogle] = useState(false);
+  const [isSyncingSheets, setIsSyncingSheets] = useState(false);
+  const [isBackupDrive, setIsBackupDrive] = useState(false);
+  const [syncSpreadsheetId, setSyncSpreadsheetId] = useState("1NpBWKB_o7K9ML7yhpBCCufJgxi4VwMTO4LzjPUDR4D4");
+  const [syncDriveFolderId, setSyncDriveFolderId] = useState("1fSJYkrfOUc_HAjAZuGIGUgkJ3SMhKMtu");
+  const [syncStatus, setSyncStatus] = useState<{ success?: boolean; message: string; sheetsUrl?: string; driveFileUrl?: string } | null>(null);
+
+  useEffect(() => {
+    const unsubscribe = initAuth(
+      (user, token) => {
+        setGoogleUser(user);
+        setGoogleToken(token);
+      },
+      () => {
+        setGoogleUser(null);
+        setGoogleToken(null);
+      }
+    );
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, []);
   
   // Admin Editing states
   const [selectedApplicant, setSelectedApplicant] = useState<Applicant | null>(null);
@@ -504,6 +543,104 @@ export default function App() {
       localStorage.removeItem("spmb_applicants");
       localStorage.removeItem("spmb_settings");
       showAlert("info", "Seluruh basis data pendaftaran telah berhasil dibersihkan kembali ke awal.");
+    }
+  };
+
+  // Google Auth & Workspace Sync handlers
+  const handleGoogleLogin = async () => {
+    setIsLoggingGoogle(true);
+    setSyncStatus(null);
+    try {
+      const res = await googleSignIn();
+      if (res) {
+        setGoogleUser(res.user);
+        setGoogleToken(res.accessToken);
+        showAlert("success", `Berhasil masuk dengan akun Google: ${res.user.displayName}`);
+      }
+    } catch (err: any) {
+      console.error(err);
+      setSyncStatus({ success: false, message: `Gagal Otentikasi: ${err.message || err}` });
+      showAlert("error", "Otentikasi Google gagal.");
+    } finally {
+      setIsLoggingGoogle(false);
+    }
+  };
+
+  const handleGoogleLogout = async () => {
+    try {
+      await logoutGoogle();
+      setGoogleUser(null);
+      setGoogleToken(null);
+      setSyncStatus(null);
+      showAlert("info", "Akunt Google terputus.");
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleSyncToSheets = async () => {
+    let activeToken = googleToken;
+    if (!activeToken) {
+      const res = await googleSignIn();
+      if (res) {
+        setGoogleUser(res.user);
+        setGoogleToken(res.accessToken);
+        activeToken = res.accessToken;
+      } else {
+        showAlert("error", "Silakan hubungkan akun Google terlebih dahulu.");
+        return;
+      }
+    }
+
+    setIsSyncingSheets(true);
+    setSyncStatus(null);
+
+    try {
+      const result = await syncToGoogleSheets(activeToken!, applicants, syncSpreadsheetId);
+      setSyncStatus(result);
+      if (result.success) {
+        showAlert("success", "Sinkronisasi Google Sheets berhasil!");
+      } else {
+        showAlert("error", "Sinkronisasi Google Sheets gagal.");
+      }
+    } catch (err: any) {
+      setSyncStatus({ success: false, message: `Error: ${err.message || err}` });
+      showAlert("error", "Terjadi kesalahan saat mengekspor database.");
+    } finally {
+      setIsSyncingSheets(false);
+    }
+  };
+
+  const handleUploadBackup = async () => {
+    let activeToken = googleToken;
+    if (!activeToken) {
+      const res = await googleSignIn();
+      if (res) {
+        setGoogleUser(res.user);
+        setGoogleToken(res.accessToken);
+        activeToken = res.accessToken;
+      } else {
+        showAlert("error", "Silakan hubungkan akun Google terlebih dahulu.");
+        return;
+      }
+    }
+
+    setIsBackupDrive(true);
+    setSyncStatus(null);
+
+    try {
+      const result = await uploadBackupToDrive(activeToken!, applicants, settings, syncDriveFolderId);
+      setSyncStatus(result);
+      if (result.success) {
+        showAlert("success", "Cadangan berhasil diunggah ke Google Drive!");
+      } else {
+        showAlert("error", "Gagal mengunggah cadangan ke Google Drive.");
+      }
+    } catch (err: any) {
+      setSyncStatus({ success: false, message: `Error: ${err.message || err}` });
+      showAlert("error", "Terjadi kesalahan saat mengunggah ke Drive.");
+    } finally {
+      setIsBackupDrive(false);
     }
   };
 
@@ -2720,7 +2857,8 @@ export default function App() {
                         { tab: "dashboard", label: "Ringkasan Eksekutif", icon: <BarChart className="w-3.5 h-3.5 text-blue-400" /> },
                         { tab: "pendaftar", label: "Kelola Pendaftar", icon: <Users className="w-3.5 h-3.5 text-emerald-400" /> },
                         { tab: "verifikasi", label: "Verifikasi Berkas", icon: <CheckCircle2 className="w-3.5 h-3.5 text-amber-400" />, action: () => { if (!auditApplicantId && applicants.length > 0) setAuditApplicantId(applicants[0].id); } },
-                        { tab: "pengaturan", label: "Informasi Landing", icon: <Settings className="w-3.5 h-3.5 text-rose-400" /> }
+                        { tab: "pengaturan", label: "Informasi Landing", icon: <Settings className="w-3.5 h-3.5 text-rose-400" /> },
+                        { tab: "sheets", label: "Integrasi Spreadsheet", icon: <FileSpreadsheet className="w-3.5 h-3.5 text-amber-300 animate-pulse" /> }
                       ].map((item) => (
                         <button
                           key={item.tab}
@@ -3880,6 +4018,256 @@ ${editRejection ? `⚠️ Catatan Evaluasi Berkas:\n_"${editRejection}"_\n\n` : 
                       </div>
                     )}
 
+                    {/* PAGE 5: Google Sheets & Google Drive Integration Dashboard */}
+                    {adminActiveTab === "sheets" && (
+                      <div className="space-y-4 animate-in fade-in duration-200 text-xs">
+                        
+                        {/* Welcome header card */}
+                        <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-indigo-900/40 p-6 rounded-3xl text-white shadow-xl relative overflow-hidden">
+                          <div className="absolute right-0 top-0 h-40 w-40 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+                          <h4 className="text-sm font-black font-display tracking-tight flex items-center gap-2 text-amber-300">
+                            <FileSpreadsheet className="w-5 h-5 text-amber-300" />
+                            <span>Integrasi Google Sheets &amp; Google Drive (SPMB 2026)</span>
+                          </h4>
+                          <p className="text-[11px] text-slate-350 leading-relaxed font-sans mt-1.5 max-w-2xl">
+                            Ekspor data pendaftaran secara aman ke Spreadsheet eksternal Anda atau simpan file cadangan sistem (.json) ke folder Google Drive resmi. Fitur ini dirancang khusus untuk memindahkan data SPMB ke spreadsheet panitia online dengan aman menggunakan integrasi resmi API Google Workspace.
+                          </p>
+                          <p className="text-[10px] text-amber-400 font-bold font-sans mt-3">
+                            ⚠️ *Aplikasi ini akan membaca/menulis data spreadsheet dan folder Google Drive tujuan hanya dengan izin eksplisit dari pengguna aplikasi.*
+                          </p>
+                        </div>
+
+                        <div className={`grid grid-cols-1 ${isResponsiveSimulated ? "" : "md:grid-cols-2"} gap-5`}>
+                          
+                          {/* Left Column: Configuration & Auth */}
+                          <div className="space-y-4">
+                            
+                            {/* Target Destination Settings */}
+                            <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-xs space-y-3.5">
+                              <h5 className="font-bold text-slate-800 text-xs flex items-center gap-1.5 border-b border-slate-100 pb-2">
+                                <Settings className="w-4 h-4 text-indigo-600" />
+                                <span>1. Atur File &amp; Folder Google</span>
+                              </h5>
+
+                              <div className="space-y-3 font-sans">
+                                <div>
+                                  <label className="text-[10px] font-bold text-slate-400 block uppercase mb-1">Spreadsheet ID Tujuan (Akses Menulis) :</label>
+                                  <input
+                                    type="text"
+                                    value={syncSpreadsheetId}
+                                    onChange={(e) => setSyncSpreadsheetId(e.target.value)}
+                                    className="bg-slate-50 border border-slate-200 text-slate-850 p-2 rounded-xl text-xs w-full focus:bg-white focus:outline-none font-medium font-mono"
+                                    placeholder="Masukkan Google Spreadsheet ID"
+                                  />
+                                  <p className="text-[9px] text-slate-400 mt-1">
+                                    Default ID Spreadsheet: <span className="font-mono text-slate-500 font-bold select-all">1NpBWKB_o7K9ML7yhpBCCufJgxi4VwMTO4LzjPUDR4D4</span> (Database SPMB 2026).
+                                  </p>
+                                </div>
+
+                                <div>
+                                  <label className="text-[10px] font-bold text-slate-400 block uppercase mb-1">Folder ID Google Drive (Unggah Backup) :</label>
+                                  <input
+                                    type="text"
+                                    value={syncDriveFolderId}
+                                    onChange={(e) => setSyncDriveFolderId(e.target.value)}
+                                    className="bg-slate-50 border border-slate-200 text-slate-850 p-2 rounded-xl text-xs w-full focus:bg-white focus:outline-none font-medium font-mono"
+                                    placeholder="Masukkan Folder Google Drive ID"
+                                  />
+                                  <p className="text-[9px] text-slate-400 mt-1">
+                                    Default ID Folder Drive: <span className="font-mono text-slate-500 font-bold select-all">1fSJYkrfOUc_HAjAZuGIGUgkJ3SMhKMtu</span>.
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Authentication Card */}
+                            <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-xs space-y-4">
+                              <h5 className="font-bold text-slate-800 text-xs flex items-center gap-1.5 border-b border-slate-100 pb-2">
+                                <Key className="w-4 h-4 text-emerald-600" />
+                                <span>2. Status Otentikasi Akun Google</span>
+                              </h5>
+
+                              {googleUser ? (
+                                <div className="space-y-3 font-sans">
+                                  <div className="bg-emerald-50 border border-emerald-150 rounded-2xl p-4 flex items-center gap-3">
+                                    <div className="h-10 w-10 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold text-sm shadow">
+                                      {googleUser.photoURL ? (
+                                        <img src={googleUser.photoURL} alt="Google avatar" className="h-full w-full rounded-full" />
+                                      ) : (
+                                        googleUser.displayName?.charAt(0) || "G"
+                                      )}
+                                    </div>
+                                    <div>
+                                      <p className="font-bold text-emerald-950 flex items-center gap-1">
+                                        <span>Terhubung dengan Google</span>
+                                        <CheckCircle className="w-3.5 h-3.5 text-emerald-500 inline-block fill-white" />
+                                      </p>
+                                      <p className="text-[10px] text-emerald-800 leading-none mt-0.5">{googleUser.email}</p>
+                                      <p className="text-[9px] text-slate-400 mt-1">Nama Profil: {googleUser.displayName}</p>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex justify-end pt-1">
+                                    <button
+                                      type="button"
+                                      onClick={handleGoogleLogout}
+                                      className="bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-150 px-3.5 py-1.5 rounded-xl cursor-pointer font-bold text-[10px] flex items-center gap-1.5 transition"
+                                    >
+                                      <LogOut className="w-3.5 h-3.5" />
+                                      <span>TUTUP KONEKSI</span>
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="space-y-4 font-sans text-center py-2">
+                                  <div className="inline-flex items-center justify-center h-12 w-12 rounded-full bg-amber-50 text-amber-500 border border-amber-200">
+                                    <AlertCircle className="w-6 h-6" />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <p className="font-extrabold text-slate-850">Koneksi Akun Google Diperlukan</p>
+                                    <p className="text-[10px] text-slate-500 max-w-sm mx-auto leading-relaxed">
+                                      Anda perlu menghubungkan akun Google panitia sekolah (<span className="text-slate-800 font-bold">smabintangplus@gmail.com</span>) untuk mengizinkan aplikasi melakukan sinkronisasi database.
+                                    </p>
+                                  </div>
+
+                                  <div className="flex justify-center pt-1">
+                                    <button
+                                      type="button"
+                                      disabled={isLoggingGoogle}
+                                      onClick={handleGoogleLogin}
+                                      className="gsi-material-button bg-white text-slate-700 hover:bg-slate-50 border border-slate-250 cursor-pointer shadow-sm rounded-xl px-5 py-3 flex items-center gap-3 transition font-semibold"
+                                    >
+                                      <div className="gsi-material-button-icon flex items-center shrink-0">
+                                        <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" style={{ display: "block", width: "16px", height: "16px" }}>
+                                          <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path>
+                                          <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path>
+                                          <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path>
+                                          <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path>
+                                          <path fill="none" d="M0 0h48v48H0z"></path>
+                                        </svg>
+                                      </div>
+                                      <span className="gsi-material-button-contents text-slate-800 font-bold text-xs">Hubungkan Akun Google</span>
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                          </div>
+
+                          {/* Right Column: Execution Sync Areas & Status */}
+                          <div className="space-y-4">
+                            
+                            {/* Sync Actions Panel */}
+                            <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-xs space-y-4">
+                              <h5 className="font-bold text-slate-800 text-xs flex items-center gap-1.5 border-b border-slate-100 pb-2">
+                                <Sparkles className="w-4 h-4 text-amber-500" />
+                                <span>3. Opsi Aksi Sinkronisasi Online</span>
+                              </h5>
+
+                              <div className="space-y-4 font-sans">
+                                
+                                {/* Sheets Action card */}
+                                <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-2.5">
+                                  <div className="flex justify-between items-start">
+                                    <div>
+                                      <p className="font-extrabold text-slate-800 text-xs">Aksi: Sinkronisasi Google Sheets</p>
+                                      <p className="text-[9px] text-slate-400 mt-0.5">Ekspor semua data formulir pendaftaran murid baru ke sheet tab draf online.</p>
+                                    </div>
+                                    <span className="bg-blue-100 text-blue-800 text-[8px] font-black uppercase px-2 py-0.5 rounded-lg border border-blue-200">Values Sync</span>
+                                  </div>
+                                  <p className="text-[9px] text-slate-500 leading-relaxed">
+                                    Ini akan menghapus draf baris di tab <span className="font-bold">"Data Pendaftar"</span> dan menulis ulang {applicants.length} baris data pendaftar aktif saat ini langsung di file spreadsheet Anda.
+                                  </p>
+                                  <button
+                                    type="button"
+                                    disabled={isSyncingSheets}
+                                    onClick={handleSyncToSheets}
+                                    className={`w-full font-bold p-3 rounded-xl text-xs transition border-0 cursor-pointer text-slate-900 bg-amber-400 hover:bg-amber-500 flex items-center justify-center gap-2 shadow-sm uppercase tracking-wide disabled:opacity-50`}
+                                  >
+                                    <FileSpreadsheet className="w-4 h-4" />
+                                    <span>{isSyncingSheets ? "Sedang Menyinkronkan..." : "SINKRONISASI KE SPREADSHEET"}</span>
+                                  </button>
+                                </div>
+
+                                {/* Drive Backup Action card */}
+                                <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-2.5">
+                                  <div className="flex justify-between items-start">
+                                    <div>
+                                      <p className="font-extrabold text-slate-800 text-xs">Aksi: Cadangkan Database ke Drive (JSON)</p>
+                                      <p className="text-[9px] text-slate-400 mt-0.5">Simpan salinan cadangan dari setelan sekolah dan data pendaftar aktif.</p>
+                                    </div>
+                                    <span className="bg-[#e0f2fe] text-[#0369a1] text-[8px] font-black uppercase px-2 py-0.5 rounded-lg border border-[#bae6fd]">Drive Backup</span>
+                                  </div>
+                                  <p className="text-[9px] text-slate-500 leading-relaxed">
+                                    File cadangan JSON akan diunggah dengan nama file otomatis (misal: "Backup_Database_SPMB_2026_*.json") langsung di folder Google Drive Anda.
+                                  </p>
+                                  <button
+                                    type="button"
+                                    disabled={isBackupDrive}
+                                    onClick={handleUploadBackup}
+                                    className={`w-full font-bold p-3 rounded-xl text-xs transition border-0 cursor-pointer text-white bg-slate-800 hover:bg-slate-900 flex items-center justify-center gap-2 shadow-sm uppercase tracking-wide disabled:opacity-50`}
+                                  >
+                                    <Download className="w-4 h-4" />
+                                    <span>{isBackupDrive ? "Sedang Mengunggah Cadangan..." : "CADANGKAN DATABASE KE DRIVE"}</span>
+                                  </button>
+                                </div>
+
+                              </div>
+                            </div>
+
+                            {/* Sync Status report card */}
+                            {syncStatus && (
+                              <div className={`border rounded-3xl p-5 shadow-sm space-y-3 animate-in zoom-in-95 duration-200 ${
+                                syncStatus.success ? "bg-emerald-50/50 border-emerald-250 text-emerald-950" : "bg-rose-50/50 border-rose-250 text-rose-950"
+                              }`}>
+                                <h6 className="font-bold text-xs font-sans flex items-center gap-1.5">
+                                  {syncStatus.success ? (
+                                    <CheckCircle className="w-4 h-4 text-emerald-500" />
+                                  ) : (
+                                    <AlertCircle className="w-4 h-4 text-rose-500" />
+                                  )}
+                                  <span>Laporan Hasil Ekspor Sistem</span>
+                                </h6>
+                                <p className="text-[11px] font-sans font-medium hover:underline leading-relaxed">
+                                  {syncStatus.message}
+                                </p>
+
+                                {syncStatus.success && (
+                                  <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-100 font-sans">
+                                    {syncStatus.sheetsUrl && (
+                                      <a
+                                        href={syncStatus.sheetsUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-850 px-3 py-1.5 rounded-xl text-[10px] font-bold hover:underline border border-emerald-200 uppercase tracking-wider"
+                                      >
+                                        <span>Buka Google Sheets</span>
+                                        <ExternalLink className="w-3 h-3" />
+                                      </a>
+                                    )}
+                                    {syncStatus.driveFileUrl && (
+                                      <a
+                                        href={syncStatus.driveFileUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-1 bg-slate-100 text-slate-850 px-3 py-1.5 rounded-xl text-[10px] font-bold hover:underline border border-slate-200 uppercase tracking-wider"
+                                      >
+                                        <span>Lihat File Backup</span>
+                                        <ExternalLink className="w-3 h-3" />
+                                      </a>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                          </div>
+
+                        </div>
+                      </div>
+                    )}
+
                   </div>
 
                 </div>
@@ -4788,6 +5176,22 @@ ${editRejection ? `⚠️ Catatan Evaluasi Berkas:\n_"${editRejection}"_\n\n` : 
       )}
 
           </div>
+
+          {/* Dynamic Floating WhatsApp Button */}
+          {currentTab !== "admin" && (
+            <a
+              href="https://wa.me/6289503312895?text=Halo%2520Panitia%252520SPMB%252520SMA%252520Bintang%252520Plus%252520Bandar%252520Lampung%25252C%252520saya%252520ingin%252520berkonsultasi%252520mengenai%252520penerimaan%252520siswa%252520baru."
+              target="_blank"
+              rel="noopener noreferrer"
+              className="fixed bottom-24 right-5 z-40 bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white h-12 w-12 rounded-full shadow-2xl flex items-center justify-center cursor-pointer transition-all duration-300 hover:scale-110 group border-0"
+              title="Hubungi Panitia SPMB via WhatsApp (Hotline)"
+            >
+              <span className="absolute right-14 opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 bg-slate-900/95 text-white text-[9px] font-bold px-2.5 py-1.5 rounded-lg whitespace-nowrap shadow border border-white/10 uppercase tracking-wider transition-all duration-200 pointer-events-none">
+                Hubungi Panitia (WhatsApp)
+              </span>
+              <i className="fa-brands fa-whatsapp text-xl"></i>
+            </a>
+          )}
 
           {/* Persistent Gemini Conversational Tutor Assistant Widget bottom floating */}
           <AIAssistant isSimulated={deviceMode !== "desktop"} />
