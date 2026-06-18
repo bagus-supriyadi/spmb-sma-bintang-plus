@@ -28,6 +28,9 @@ export async function syncToGoogleSheets(
     );
 
     if (!metaRes.ok) {
+      if (metaRes.status === 401 || metaRes.status === 403) {
+        throw new Error("Token autentikasi Google Anda telah kedaluwarsa atau akses ditolak (401/403). Silakan klik tombol 'Hubungkan Google Admin' kembali di bawah untuk memperbarui sesi koneksi Anda.");
+      }
       const errText = await metaRes.text();
       console.error("Sheets metadata fetched failed:", errText);
       throw new Error(`Gagal membuka Spreadsheet. Pastikan ID Spreadsheet benar dan Anda memiliki akses tulis.`);
@@ -216,6 +219,9 @@ export async function uploadBackupToDrive(
     );
 
     if (!res.ok) {
+      if (res.status === 401 || res.status === 403) {
+        throw new Error("Token autentikasi Google Anda telah kedaluwarsa atau akses ditolak (401/403). Silakan klik tombol 'Hubungkan Google Admin' kembali di bawah untuk memperbarui sesi koneksi Anda.");
+      }
       const errText = await res.text();
       console.error("Drive upload failed:", errText);
       throw new Error(`Gagal mengunggah cadangan data ke Google Drive: ${res.statusText}`);
