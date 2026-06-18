@@ -128,9 +128,22 @@ export default function App() {
   const [isLoggingGoogle, setIsLoggingGoogle] = useState(false);
   const [isSyncingSheets, setIsSyncingSheets] = useState(false);
   const [isBackupDrive, setIsBackupDrive] = useState(false);
-  const [syncSpreadsheetId, setSyncSpreadsheetId] = useState("1NpBWKB_o7K9ML7yhpBCCufJgxi4VwMTO4LzjPUDR4D4");
-  const [syncDriveFolderId, setSyncDriveFolderId] = useState("1fSJYkrfOUc_HAjAZuGIGUgkJ3SMhKMtu");
+  const [syncSpreadsheetId, setSyncSpreadsheetId] = useState(() => {
+    return localStorage.getItem("spmb_sync_spreadsheet_id") || "1NpBWKB_o7K9ML7yhpBCCufJgxi4VwMTO4LzjPUDR4D4";
+  });
+  const [syncDriveFolderId, setSyncDriveFolderId] = useState(() => {
+    return localStorage.getItem("spmb_sync_drive_folder_id") || "1fSJYkrfOUc_HAjAZuGIGUgkJ3SMhKMtu";
+  });
   const [syncStatus, setSyncStatus] = useState<{ success?: boolean; message: string; sheetsUrl?: string; driveFileUrl?: string } | null>(null);
+
+  // Auto-save Sheet ID and Drive Folder ID on change
+  useEffect(() => {
+    localStorage.setItem("spmb_sync_spreadsheet_id", syncSpreadsheetId);
+  }, [syncSpreadsheetId]);
+
+  useEffect(() => {
+    localStorage.setItem("spmb_sync_drive_folder_id", syncDriveFolderId);
+  }, [syncDriveFolderId]);
 
   // States for cross-origin popup auth fallback
   const [authPopupMode, setAuthPopupMode] = useState(false);
@@ -599,40 +612,17 @@ export default function App() {
     setIsLoggingGoogle(true);
     setSyncStatus(null);
     try {
-      const isCustomDomain = window.location.hostname !== "localhost" && !window.location.hostname.endsWith(".run.app");
-      
-      if (isCustomDomain) {
-        // When running on a custom domain like Vercel, Firebase popups from this domain will fail with "unauthorized-domain".
-        // Instead, we open a popup window pointing to our authorized container URL with state.
-        // Using the active development container domain for OAuth authorization popup on custom domains
-        const containerUrl = "https://ais-dev-ygw7we2reebi6v2zbxsjfd-874389783997.asia-southeast1.run.app";
-        const authPopupUrl = `${containerUrl}?mode=auth-popup&origin=${encodeURIComponent(window.location.origin)}`;
-        
-        const popup = window.open(authPopupUrl, "SPMB_Google_Auth", "width=500,height=600,scrollbars=yes,resizable=yes");
-        if (!popup) {
-          showAlert("error", "Popup diblokir browser! Harap izinkan popup untuk situs ini agar bisa menghubungkan Google.");
-          setIsLoggingGoogle(false);
-        } else {
-          // Check if popup is closed by the user eventually
-          const timer = setInterval(() => {
-            if (popup.closed) {
-              clearInterval(timer);
-              setIsLoggingGoogle(false);
-            }
-          }, 1000);
-        }
-      } else {
-        const res = await googleSignIn();
-        if (res) {
-          setGoogleUser(res.user);
-          setGoogleToken(res.accessToken);
-          showAlert("success", `Berhasil masuk dengan akun Google: ${res.user.displayName}`);
-        }
+      const res = await googleSignIn();
+      if (res) {
+        setGoogleUser(res.user);
+        setGoogleToken(res.accessToken);
+        showAlert("success", `Berhasil masuk dengan akun Google: ${res.user.displayName}`);
       }
     } catch (err: any) {
       console.error(err);
       setSyncStatus({ success: false, message: `Gagal Otentikasi: ${err.message || err}` });
-      showAlert("error", "Otentikasi Google gagal.");
+      showAlert("error", `Otentikasi Google gagal: ${err.message || err}`);
+    } finally {
       setIsLoggingGoogle(false);
     }
   };
@@ -1790,8 +1780,7 @@ export default function App() {
                         <p>NPSN Nasional : 69912345</p>
                       </div>
                       <div>
-                        <p>Status : Swasta Plus Mandiri</p>
-                        <p>Akreditasi : Rintisan Baru (Est. 2025)</p>
+                        <p>Status : Swasta Plus</p>
                       </div>
                     </div>
                   </div>
