@@ -536,7 +536,7 @@ export default function App() {
   // Admin Login Handle
   const handleAdminLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (adminPassphrase === "adminspmb" || adminPassphrase === "admin") {
+    if (adminPassphrase === "@dm1n") {
       setIsAdminAuthenticated(true);
       setAdminError("");
       showAlert("success", "Otorisasi Panitia Berhasil! Selamat datang di dashboard utama.");
@@ -2959,7 +2959,7 @@ export default function App() {
                       type="password"
                       required
                       value={adminPassphrase}
-                      placeholder="Masukkan kata sandi panitia (adminspmb)"
+                      placeholder="Masukkan kata sandi panitia"
                       onChange={(e) => setAdminPassphrase(e.target.value)}
                       className="bg-slate-50 text-slate-850 placeholder-slate-400 text-xs rounded-xl p-3 w-full border border-slate-200 focus:ring-1 focus:ring-blue-600 focus:bg-white outline-none font-sans"
                     />
@@ -2979,9 +2979,32 @@ export default function App() {
                   </button>
                 </form>
 
-                <p className="text-[10px] text-center text-slate-400 font-sans leading-relaxed">
-                  *Tip pengujian penilai: Gunakan kata sandi <strong>adminspmb</strong> atau <strong>admin</strong> untuk masuk dalam platform pengurus.
-                </p>
+                <div className="mt-4 pt-4 border-t border-slate-100 text-center space-y-2">
+                  <p className="text-[11px] font-bold text-rose-600 font-sans flex items-center justify-center gap-1">
+                    ✨ Ingin Web SPMB Keren Seperti Ini?
+                  </p>
+                  <p className="text-[10px] text-slate-500 font-sans leading-relaxed">
+                    Dapatkan sistem registrasi siswa baru yang modern, cepat, serta otomatis tersinkronisasi ke Google Sheet &amp; Google Drive Anda!
+                  </p>
+                  <div className="flex flex-col gap-1.5 pt-1">
+                    <a
+                      href="https://wa.me/6285179973232"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[10px] bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-250 font-semibold py-2 px-3 rounded-lg transition-all flex items-center justify-center gap-1 mx-auto w-full max-w-[280px]"
+                    >
+                      <span>💬 Hubungi WA: 085179973232</span>
+                    </a>
+                    <a
+                      href="https://bagus-supriyadi.biz.id/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[10px] bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-250 font-semibold py-2 px-3 rounded-lg transition-all flex items-center justify-center gap-1 mx-auto w-full max-w-[280px]"
+                    >
+                      <span>🌐 Kunjungi: bagus-supriyadi.biz.id</span>
+                    </a>
+                  </div>
+                </div>
               </div>
             ) : (
               // Authenticated Admin Dashboard main panel
